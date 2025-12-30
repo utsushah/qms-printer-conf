@@ -63,11 +63,14 @@ const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {SERVICE_CODES.map(code => (
+                {settings.manufacturing.service.activeServices.map(code => (
                   <SelectItem key={code} value={code}>Service {code}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
+            {settings.manufacturing.service.activeServices.length === 0 && (
+              <p className="text-xs text-muted-foreground mt-2">No active services. Configure in Service Setting first.</p>
+            )}
           </div>
         </div>
       </Card>

@@ -59,10 +59,19 @@ export interface WiFiSettings {
   networks: WiFiNetwork[];
 }
 
+export interface NetworkInfo {
+  ipAddress: string;
+  subnetMask: string;
+  gateway: string;
+  dns: string;
+}
+
 export interface SystemInfo {
   systemInfo: string;
   softwareVersion: string;
   protocolType: ProtocolType;
+  networkInfo: NetworkInfo;
+  printerModel: PrinterModel;
 }
 
 export interface ServiceSettings {

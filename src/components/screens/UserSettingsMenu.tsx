@@ -26,7 +26,7 @@ const UserSettingsMenu: React.FC<UserSettingsMenuProps> = ({ onNavigate, onBack 
       <div className="space-y-3">
         <MenuCard
           icon={Languages}
-          title="Language Settings"
+          title="Display Audio Language"
           description={`${settings.user.language.firstLanguage} / ${settings.user.language.secondLanguage}`}
           onClick={() => onNavigate('language')}
         />

@@ -57,6 +57,13 @@ const defaultSettings: AllSettings = {
       systemInfo: 'ESP32-S3 QMS Printer',
       softwareVersion: 'v1.0.0',
       protocolType: 'Wi-Fi',
+      networkInfo: {
+        ipAddress: '192.168.1.100',
+        subnetMask: '255.255.255.0',
+        gateway: '192.168.1.1',
+        dns: '8.8.8.8',
+      },
+      printerModel: 'KP-628E',
     },
   },
   manufacturing: {
@@ -164,6 +171,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
         info: {
           ...prev.user.info,
           protocolType: mfg.protocol || prev.manufacturing.protocol,
+          printerModel: mfg.printer?.deviceModel || prev.user.info.printerModel,
         },
       },
     }));
