@@ -26,15 +26,17 @@ const RJ45Icon = () => (
 
 const RS485Icon = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-6 w-6">
-    <path d="M4 12h4" />
-    <path d="M16 12h4" />
-    <circle cx="12" cy="12" r="4" />
-    <path d="M12 8V4" />
-    <path d="M12 20v-4" />
-    <path d="M8 8L5 5" />
-    <path d="M19 19l-3-3" />
-    <path d="M8 16l-3 3" />
-    <path d="M19 5l-3 3" />
+    {/* DB9 Connector Style for RS485 */}
+    <path d="M6 7h12a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2z" />
+    <circle cx="7" cy="10" r="0.5" fill="currentColor" />
+    <circle cx="10" cy="10" r="0.5" fill="currentColor" />
+    <circle cx="14" cy="10" r="0.5" fill="currentColor" />
+    <circle cx="17" cy="10" r="0.5" fill="currentColor" />
+    <circle cx="8.5" cy="13" r="0.5" fill="currentColor" />
+    <circle cx="12" cy="13" r="0.5" fill="currentColor" />
+    <circle cx="15.5" cy="13" r="0.5" fill="currentColor" />
+    <path d="M4 9v6" />
+    <path d="M20 9v6" />
   </svg>
 );
 

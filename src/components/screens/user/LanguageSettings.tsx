@@ -15,7 +15,7 @@ interface LanguageSettingsProps {
 
 const LANGUAGES: Language[] = ['English', 'Hindi', 'Gujarati'];
 
-const LanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack }) => {
+const DisplayAudioLanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack }) => {
   const { settings, updateLanguageSettings } = useSettings();
   const [firstLang, setFirstLang] = useState<Language>(settings.user.language.firstLanguage);
   const [secondLang, setSecondLang] = useState<Language>(settings.user.language.secondLanguage);
@@ -45,7 +45,7 @@ const LanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack }) => {
   const isValid = firstLang !== secondLang;
 
   return (
-    <PageContainer title="Language Settings" showBack onBack={onBack}>
+    <PageContainer title="Display Audio Language" showBack onBack={onBack}>
       <Card className="p-4">
         <div className="space-y-4">
           <div>
@@ -89,4 +89,4 @@ const LanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack }) => {
   );
 };
 
-export default LanguageSettings;
+export default DisplayAudioLanguageSettings;
