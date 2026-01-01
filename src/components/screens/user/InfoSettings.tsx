@@ -1,8 +1,9 @@
-import React from 'react';
-import { Cpu, Code, Radio, Network, Printer } from 'lucide-react';
+import React, { useEffect, useState } from 'react';
+import { Cpu, Code, Radio, Network, Printer, Loader2 } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/card';
 import { useSettings } from '@/contexts/SettingsContext';
+import { esp32Api } from '@/api/esp32';
 
 interface InfoSettingsProps {
   onBack: () => void;
@@ -10,8 +11,27 @@ interface InfoSettingsProps {
 
 const InfoSettings: React.FC<InfoSettingsProps> = ({ onBack }) => {
   const { settings } = useSettings();
-  const { systemInfo, softwareVersion, protocolType, networkInfo, printerModel } = settings.user.info;
+  const [loading, setLoading] = useState(true);
+  const [systemInfo, setSystemInfo] = useState(settings.user.info.systemInfo);
+  const [softwareVersion, setSoftwareVersion] = useState(settings.user.info.softwareVersion);
+  
+  const { protocolType, networkInfo, printerModel } = settings.user.info;
   const showNetworkInfo = protocolType === 'Wi-Fi' || protocolType === 'LAN';
+
+  useEffect(() => {
+    const fetchInfo = async () => {
+      try {
+        const info = await esp32Api.getSystemInfo();
+        setSystemInfo(info.systemInfo);
+        setSoftwareVersion(info.softwareVersion);
+      } catch (error) {
+        console.error('Failed to fetch system info:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchInfo();
+  }, []);
 
   const infoItems = [
     {

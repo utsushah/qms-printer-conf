@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { toast } from '@/hooks/use-toast';
+import { esp32Api } from '@/api/esp32';
 
 interface SoftwareUpdateProps {
   onBack: () => void;
@@ -33,7 +34,7 @@ const SoftwareUpdate: React.FC<SoftwareUpdateProps> = ({ onBack }) => {
     }
   };
 
-  const handleUpdate = () => {
+  const handleUpdate = async () => {
     if (!selectedFile) {
       toast({
         title: "No File Selected",
@@ -46,22 +47,33 @@ const SoftwareUpdate: React.FC<SoftwareUpdateProps> = ({ onBack }) => {
     setUploading(true);
     setProgress(0);
 
-    // Simulate upload progress
-    const interval = setInterval(() => {
-      setProgress(prev => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          setUploading(false);
-          setUpdateComplete(true);
-          toast({
-            title: "Update Complete",
-            description: "Firmware updated successfully. Device will restart.",
-          });
-          return 100;
-        }
-        return prev + 2;
+    try {
+      const result = await esp32Api.uploadFirmware(selectedFile, (progress) => {
+        setProgress(progress);
       });
-    }, 100);
+      
+      if (result.success) {
+        setUpdateComplete(true);
+        toast({
+          title: "Update Complete",
+          description: "Firmware updated successfully. Device will restart.",
+        });
+      } else {
+        toast({
+          title: "Update Failed",
+          description: result.error || "Failed to update firmware",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Update Failed",
+        description: "Failed to upload firmware to device",
+        variant: "destructive",
+      });
+    } finally {
+      setUploading(false);
+    }
   };
 
   const formatFileSize = (bytes: number) => {

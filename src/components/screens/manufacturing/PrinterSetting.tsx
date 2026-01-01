@@ -19,11 +19,11 @@ const PRINTER_MODELS: { model: PrinterModel; name: string; description: string }
 ];
 
 const PrinterSetting: React.FC<PrinterSettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings } = useSettings();
+  const { settings, updateManufacturingSettings, saveSettings } = useSettings();
   const [printer, setPrinter] = useState<PrinterSettingsType>(settings.manufacturing.printer);
   const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (printer.tokenCopies < 1 || printer.tokenCopies > 10) {
       toast({
         title: "Validation Error",
@@ -34,14 +34,22 @@ const PrinterSetting: React.FC<PrinterSettingProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      updateManufacturingSettings({ printer });
-      setLoading(false);
+    updateManufacturingSettings({ printer });
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Printer settings updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

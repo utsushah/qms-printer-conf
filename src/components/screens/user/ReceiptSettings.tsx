@@ -16,7 +16,7 @@ interface ReceiptSettingsProps {
 }
 
 const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
-  const { settings, updateReceiptSettings } = useSettings();
+  const { settings, updateReceiptSettings, saveSettings } = useSettings();
   const [receipt, setReceipt] = useState<ReceiptSettingsType>(settings.user.receipt);
   const [loading, setLoading] = useState(false);
 
@@ -72,7 +72,7 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
     }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (receipt.department.enabled && receipt.department.name.length > 16) {
       toast({
         title: "Validation Error",
@@ -83,14 +83,22 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      updateReceiptSettings(receipt);
-      setLoading(false);
+    updateReceiptSettings(receipt);
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Receipt settings updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

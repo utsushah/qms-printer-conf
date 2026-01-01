@@ -20,7 +20,7 @@ const MODELS: { type: ModelType; label: string; limit: number; description: stri
 ];
 
 const ServiceSetting: React.FC<ServiceSettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings, SERVICE_CODES, getModelLimit } = useSettings();
+  const { settings, updateManufacturingSettings, SERVICE_CODES, getModelLimit, saveSettings } = useSettings();
   const [service, setService] = useState<ServiceSettings>(settings.manufacturing.service);
   const [loading, setLoading] = useState(false);
 
@@ -53,7 +53,7 @@ const ServiceSetting: React.FC<ServiceSettingProps> = ({ onBack }) => {
     setService(prev => ({ ...prev, activeServices: newServices }));
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (service.activeServices.length === 0) {
       toast({
         title: "Validation Error",
@@ -64,14 +64,22 @@ const ServiceSetting: React.FC<ServiceSettingProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      updateManufacturingSettings({ service });
-      setLoading(false);
+    updateManufacturingSettings({ service });
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Service settings updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

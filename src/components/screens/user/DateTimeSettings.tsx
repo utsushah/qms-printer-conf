@@ -30,12 +30,20 @@ const DateTimeSettings: React.FC<DateTimeSettingsProps> = ({ onBack }) => {
     };
   };
 
-  const handleSync = () => {
-    syncDateTime();
-    toast({
-      title: "Time Synced",
-      description: "Device time synchronized with system time",
-    });
+  const handleSync = async () => {
+    try {
+      await syncDateTime();
+      toast({
+        title: "Time Synced",
+        description: "Device time synchronized with system time",
+      });
+    } catch (error) {
+      toast({
+        title: "Sync Failed",
+        description: "Failed to sync device time",
+        variant: "destructive",
+      });
+    }
   };
 
   const deviceDT = formatDateTime(settings.user.dateTime.deviceDateTime);

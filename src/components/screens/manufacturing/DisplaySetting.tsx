@@ -16,20 +16,28 @@ interface DisplaySettingProps {
 }
 
 const DisplaySetting: React.FC<DisplaySettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings } = useSettings();
+  const { settings, updateManufacturingSettings, saveSettings } = useSettings();
   const [display, setDisplay] = useState<DisplaySettingsType>(settings.manufacturing.display);
   const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setLoading(true);
-    setTimeout(() => {
-      updateManufacturingSettings({ display });
-      setLoading(false);
+    updateManufacturingSettings({ display });
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Display settings updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

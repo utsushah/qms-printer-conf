@@ -13,6 +13,7 @@ import {
   ManufacturingSettings,
   UserSettings
 } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 const SERVICE_CODES: ServiceCode[] = ['A', 'C', 'E', 'F', 'H', 'J', 'L', 'P', 'U', 'Y'];
 
@@ -89,10 +90,11 @@ const defaultSettings: AllSettings = {
 
 interface SettingsContextType {
   settings: AllSettings;
+  loading: boolean;
   updateLanguageSettings: (lang: LanguageSettings) => void;
   updateCallingMethod: (method: CallingMethod) => void;
   updateReceiptSettings: (receipt: ReceiptSettings) => void;
-  syncDateTime: () => void;
+  syncDateTime: () => Promise<void>;
   updateDispenseSettings: (dispense: DispenseSettings) => void;
   updateManufacturingSettings: (mfg: Partial<ManufacturingSettings>) => void;
   updateProtocol: (protocol: ProtocolType) => void;
@@ -100,12 +102,40 @@ interface SettingsContextType {
   validateServiceCount: (services: ServiceCode[]) => boolean;
   getModelLimit: (model: ModelType) => number;
   SERVICE_CODES: ServiceCode[];
+  saveSettings: (settingsToSave?: Partial<AllSettings>) => Promise<{ success: boolean; error?: string }>;
+  loadSettings: () => Promise<void>;
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
 
 export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<AllSettings>(defaultSettings);
+  const [loading, setLoading] = useState(true);
+
+  // Load settings from ESP32 on mount
+  const loadSettings = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await esp32Api.getSettings();
+      if (data) {
+        setSettings(prev => ({
+          ...prev,
+          ...data,
+          user: { ...prev.user, ...data.user },
+          manufacturing: { ...prev.manufacturing, ...data.manufacturing },
+        }));
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+      // Use default settings on error
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSettings();
+  }, [loadSettings]);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -122,6 +152,18 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }, 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Save settings to ESP32
+  const saveSettings = useCallback(async (settingsToSave?: Partial<AllSettings>): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const dataToSave = settingsToSave || settings;
+      const response = await esp32Api.saveSettings(dataToSave);
+      return { success: response.success, error: response.error };
+    } catch (error) {
+      console.error('Failed to save settings:', error);
+      return { success: false, error: error instanceof Error ? error.message : 'Failed to save settings' };
+    }
+  }, [settings]);
 
   const updateLanguageSettings = useCallback((lang: LanguageSettings) => {
     setSettings(prev => ({
@@ -144,15 +186,21 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }));
   }, []);
 
-  const syncDateTime = useCallback(() => {
-    const now = new Date().toISOString();
-    setSettings(prev => ({
-      ...prev,
-      user: {
-        ...prev.user,
-        dateTime: { deviceDateTime: now, systemDateTime: now },
-      },
-    }));
+  const syncDateTime = useCallback(async () => {
+    try {
+      await esp32Api.syncDateTime();
+      const now = new Date().toISOString();
+      setSettings(prev => ({
+        ...prev,
+        user: {
+          ...prev.user,
+          dateTime: { deviceDateTime: now, systemDateTime: now },
+        },
+      }));
+    } catch (error) {
+      console.error('Failed to sync datetime:', error);
+      throw error;
+    }
   }, []);
 
   const updateDispenseSettings = useCallback((dispense: DispenseSettings) => {
@@ -200,6 +248,7 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   return (
     <SettingsContext.Provider value={{
       settings,
+      loading,
       updateLanguageSettings,
       updateCallingMethod,
       updateReceiptSettings,
@@ -211,6 +260,8 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       validateServiceCount,
       getModelLimit,
       SERVICE_CODES,
+      saveSettings,
+      loadSettings,
     }}>
       {children}
     </SettingsContext.Provider>

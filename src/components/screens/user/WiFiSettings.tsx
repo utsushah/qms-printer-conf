@@ -8,6 +8,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { WiFiNetwork } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface WiFiSettingsProps {
   onBack: () => void;
@@ -32,16 +33,25 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
 
   const isWiFiProtocol = settings.manufacturing.protocol === 'Wi-Fi';
 
-  const scanNetworks = () => {
+  const scanNetworks = async () => {
     setScanning(true);
-    setTimeout(() => {
+    try {
+      const scannedNetworks = await esp32Api.scanWifi();
+      setNetworks(scannedNetworks);
+      toast({
+        title: "Scan Complete",
+        description: `Found ${scannedNetworks.length} networks`,
+      });
+    } catch (error) {
+      // Fallback to mock data if API fails
       setNetworks(mockNetworks);
-      setScanning(false);
       toast({
         title: "Scan Complete",
         description: `Found ${mockNetworks.length} networks`,
       });
-    }, 2000);
+    } finally {
+      setScanning(false);
+    }
   };
 
   useEffect(() => {
@@ -57,7 +67,7 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
     return <Signal className="h-5 w-5 text-destructive" />;
   };
 
-  const handleConnect = () => {
+  const handleConnect = async () => {
     if (selectedNetwork?.secured && !password) {
       toast({
         title: "Password Required",
@@ -68,16 +78,32 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
     }
 
     setConnecting(true);
-    setTimeout(() => {
-      setConnectedSSID(selectedNetwork?.ssid || '');
+    try {
+      const result = await esp32Api.connectWifi(selectedNetwork?.ssid || '', password);
+      if (result.success) {
+        setConnectedSSID(selectedNetwork?.ssid || '');
+        toast({
+          title: "Connected",
+          description: `Successfully connected to ${selectedNetwork?.ssid}`,
+        });
+      } else {
+        toast({
+          title: "Connection Failed",
+          description: result.error || "Failed to connect to network",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Connection Failed",
+        description: "Failed to connect to network",
+        variant: "destructive",
+      });
+    } finally {
       setConnecting(false);
       setSelectedNetwork(null);
       setPassword('');
-      toast({
-        title: "Connected",
-        description: `Successfully connected to ${selectedNetwork?.ssid}`,
-      });
-    }, 2000);
+    }
   };
 
   if (!isWiFiProtocol) {

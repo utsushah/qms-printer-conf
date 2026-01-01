@@ -14,11 +14,11 @@ interface RemoteSettingProps {
 }
 
 const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings, SERVICE_CODES } = useSettings();
+  const { settings, updateManufacturingSettings, saveSettings } = useSettings();
   const [remote, setRemote] = useState<RemoteSettingsType>(settings.manufacturing.remote);
   const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!remote.remoteId.trim()) {
       toast({
         title: "Validation Error",
@@ -29,14 +29,22 @@ const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    setTimeout(() => {
-      updateManufacturingSettings({ remote });
-      setLoading(false);
+    updateManufacturingSettings({ remote });
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Remote settings updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
