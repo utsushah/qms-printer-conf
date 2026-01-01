@@ -156,8 +156,19 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   // Save settings to ESP32
   const saveSettings = useCallback(async (settingsToSave?: Partial<AllSettings>): Promise<{ success: boolean; error?: string }> => {
     try {
+      // If a caller passes a partial payload, try to use the more specific endpoint.
+      if (settingsToSave?.user && !settingsToSave?.manufacturing) {
+        const response = await esp32Api.saveUserSettings(settingsToSave.user as unknown as Record<string, unknown>);
+        return { success: response.success, error: response.error };
+      }
+
+      if (settingsToSave?.manufacturing && !settingsToSave?.user) {
+        const response = await esp32Api.saveManufacturingSettings(settingsToSave.manufacturing as unknown as Record<string, unknown>);
+        return { success: response.success, error: response.error };
+      }
+
       const dataToSave = settingsToSave || settings;
-      const response = await esp32Api.saveSettings(dataToSave);
+      const response = await esp32Api.saveSettings(dataToSave as unknown as Record<string, unknown>);
       return { success: response.success, error: response.error };
     } catch (error) {
       console.error('Failed to save settings:', error);
