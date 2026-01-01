@@ -16,12 +16,12 @@ interface LanguageSettingsProps {
 const LANGUAGES: Language[] = ['English', 'Hindi', 'Gujarati'];
 
 const DisplayAudioLanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack }) => {
-  const { settings, updateLanguageSettings } = useSettings();
+  const { settings, updateLanguageSettings, saveSettings } = useSettings();
   const [firstLang, setFirstLang] = useState<Language>(settings.user.language.firstLanguage);
   const [secondLang, setSecondLang] = useState<Language>(settings.user.language.secondLanguage);
   const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (firstLang === secondLang) {
       toast({
         title: "Validation Error",
@@ -32,14 +32,22 @@ const DisplayAudioLanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack 
     }
 
     setLoading(true);
-    setTimeout(() => {
-      updateLanguageSettings({ firstLanguage: firstLang, secondLanguage: secondLang });
-      setLoading(false);
+    updateLanguageSettings({ firstLanguage: firstLang, secondLanguage: secondLang });
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Language settings updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   const isValid = firstLang !== secondLang;

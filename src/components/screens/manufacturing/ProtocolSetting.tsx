@@ -62,20 +62,28 @@ const PROTOCOLS: { type: ProtocolType; label: string; description: string; icon:
 ];
 
 const ProtocolSetting: React.FC<ProtocolSettingProps> = ({ onBack }) => {
-  const { settings, updateProtocol } = useSettings();
+  const { settings, updateProtocol, saveSettings } = useSettings();
   const [protocol, setProtocol] = useState<ProtocolType>(settings.manufacturing.protocol);
   const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setLoading(true);
-    setTimeout(() => {
-      updateProtocol(protocol);
-      setLoading(false);
+    updateProtocol(protocol);
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: `Protocol changed to ${protocol}`,
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

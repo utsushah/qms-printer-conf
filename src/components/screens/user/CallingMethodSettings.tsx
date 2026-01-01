@@ -12,20 +12,28 @@ interface CallingMethodSettingsProps {
 }
 
 const CallingMethodSettings: React.FC<CallingMethodSettingsProps> = ({ onBack }) => {
-  const { settings, updateCallingMethod } = useSettings();
+  const { settings, updateCallingMethod, saveSettings } = useSettings();
   const [method, setMethod] = useState<CallingMethod>(settings.user.callingMethod);
   const [loading, setLoading] = useState(false);
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setLoading(true);
-    setTimeout(() => {
-      updateCallingMethod(method);
-      setLoading(false);
+    updateCallingMethod(method);
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Calling method updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

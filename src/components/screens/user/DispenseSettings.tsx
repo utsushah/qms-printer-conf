@@ -19,7 +19,7 @@ interface DispenseSettingsProps {
 }
 
 const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
-  const { settings, updateDispenseSettings, getActiveServices } = useSettings();
+  const { settings, updateDispenseSettings, getActiveServices, saveSettings } = useSettings();
   const [dispense, setDispense] = useState<DispenseSettingsType>(settings.user.dispense);
   const [loading, setLoading] = useState(false);
 
@@ -62,16 +62,24 @@ const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
     });
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     setLoading(true);
-    setTimeout(() => {
-      updateDispenseSettings(dispense);
-      setLoading(false);
+    updateDispenseSettings(dispense);
+    const result = await saveSettings();
+    setLoading(false);
+    
+    if (result.success) {
       toast({
         title: "Settings Saved",
         description: "Dispense settings updated successfully",
       });
-    }, 500);
+    } else {
+      toast({
+        title: "Save Failed",
+        description: result.error || "Failed to save settings",
+        variant: "destructive",
+      });
+    }
   };
 
   if (activeServices.length === 0) {
