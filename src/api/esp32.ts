@@ -7,7 +7,8 @@ import {
   RemoteSettings,
   DisplaySettings,
   PrinterSettings,
-  ProtocolType
+  ProtocolType,
+  ServiceCode
 } from '@/types/settings';
 
 const API_BASE = ''; // Empty for same-origin requests to ESP32
@@ -81,6 +82,11 @@ export const esp32Api = {
 
   async saveProtocolSettings(protocol: ProtocolType): Promise<ApiResponse> {
     return postRequest('/api/settings/protocol', { protocol });
+  },
+
+  // Jump to Token API
+  async jumpToToken(service: ServiceCode, tokenNumber: number): Promise<ApiResponse> {
+    return postRequest('/api/dispense/jump', { service, tokenNumber });
   },
 
   // WiFi APIs

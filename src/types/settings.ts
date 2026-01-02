@@ -79,9 +79,14 @@ export interface ServiceSettings {
   activeServices: ServiceCode[];
 }
 
-export interface RemoteSettings {
+export interface RemoteDevice {
   remoteId: string;
   serviceCode: ServiceCode;
+}
+
+export interface RemoteSettings {
+  numberOfDevices: number;
+  devices: RemoteDevice[];
 }
 
 export interface CounterDisplaySettings {

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
-import { RemoteSettings as RemoteSettingsType, ServiceCode } from '@/types/settings';
+import { RemoteSettings as RemoteSettingsType, RemoteDevice, ServiceCode } from '@/types/settings';
 import { esp32Api } from '@/api/esp32';
 
 interface RemoteSettingProps {
@@ -19,11 +19,46 @@ const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
   const [remote, setRemote] = useState<RemoteSettingsType>(settings.manufacturing.remote);
   const [loading, setLoading] = useState(false);
 
+  const activeServices = settings.manufacturing.service.activeServices;
+
+  const handleDeviceCountChange = (count: number) => {
+    const newCount = Math.max(1, Math.min(10, count));
+    const currentDevices = remote.devices;
+    
+    let newDevices: RemoteDevice[];
+    if (newCount > currentDevices.length) {
+      // Add new devices
+      newDevices = [
+        ...currentDevices,
+        ...Array(newCount - currentDevices.length).fill(null).map(() => ({
+          remoteId: '',
+          serviceCode: activeServices[0] || 'A' as ServiceCode
+        }))
+      ];
+    } else {
+      // Remove devices
+      newDevices = currentDevices.slice(0, newCount);
+    }
+    
+    setRemote({ numberOfDevices: newCount, devices: newDevices });
+  };
+
+  const updateDevice = (index: number, field: keyof RemoteDevice, value: string) => {
+    setRemote(prev => ({
+      ...prev,
+      devices: prev.devices.map((device, i) => 
+        i === index ? { ...device, [field]: value } : device
+      )
+    }));
+  };
+
   const handleSave = async () => {
-    if (!remote.remoteId.trim()) {
+    // Validate all devices have Remote IDs
+    const emptyRemoteIds = remote.devices.some(d => !d.remoteId.trim());
+    if (emptyRemoteIds) {
       toast({
         title: "Validation Error",
-        description: "Remote ID is required",
+        description: "All devices must have a Remote ID",
         variant: "destructive",
       });
       return;
@@ -62,36 +97,57 @@ const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
       <Card className="p-4">
         <div className="space-y-4">
           <div>
-            <Label className="text-sm font-medium text-muted-foreground">Remote ID</Label>
+            <Label className="text-sm font-medium text-muted-foreground">Number of Devices</Label>
             <Input
-              value={remote.remoteId}
-              onChange={(e) => setRemote(prev => ({ ...prev, remoteId: e.target.value }))}
-              placeholder="Enter Remote ID"
+              type="number"
+              min={1}
+              max={10}
+              value={remote.numberOfDevices}
+              onChange={(e) => handleDeviceCountChange(parseInt(e.target.value) || 1)}
               className="mt-2"
             />
           </div>
-
-          <div>
-            <Label className="text-sm font-medium text-muted-foreground">Service Code</Label>
-            <Select 
-              value={remote.serviceCode} 
-              onValueChange={(v) => setRemote(prev => ({ ...prev, serviceCode: v as ServiceCode }))}
-            >
-              <SelectTrigger className="mt-2">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {settings.manufacturing.service.activeServices.map(code => (
-                  <SelectItem key={code} value={code}>Service {code}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {settings.manufacturing.service.activeServices.length === 0 && (
-              <p className="text-xs text-muted-foreground mt-2">No active services. Configure in Service Setting first.</p>
-            )}
-          </div>
         </div>
       </Card>
+
+      <div className="space-y-3 mt-4">
+        {remote.devices.map((device, index) => (
+          <Card key={index} className="p-4">
+            <h3 className="font-medium text-foreground mb-4">Device {index + 1}</h3>
+            <div className="space-y-4">
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Remote ID</Label>
+                <Input
+                  value={device.remoteId}
+                  onChange={(e) => updateDevice(index, 'remoteId', e.target.value)}
+                  placeholder="Enter Remote ID"
+                  className="mt-2"
+                />
+              </div>
+
+              <div>
+                <Label className="text-sm font-medium text-muted-foreground">Service Code</Label>
+                <Select 
+                  value={device.serviceCode} 
+                  onValueChange={(v) => updateDevice(index, 'serviceCode', v)}
+                >
+                  <SelectTrigger className="mt-2">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {activeServices.map(code => (
+                      <SelectItem key={code} value={code}>Service {code}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {activeServices.length === 0 && (
+                  <p className="text-xs text-muted-foreground mt-2">No active services. Configure in Service Setting first.</p>
+                )}
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
 
       <div className="mt-4">
         <SaveButton onClick={handleSave} loading={loading} />
