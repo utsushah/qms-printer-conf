@@ -73,8 +73,8 @@ const defaultSettings: AllSettings = {
       activeServices: ['A', 'C', 'E', 'F'],
     },
     remote: {
-      remoteId: '',
-      serviceCode: 'A',
+      numberOfDevices: 1,
+      devices: [{ remoteId: '', serviceCode: 'A' }],
     },
     display: {
       counterDisplay: { enabled: false, numberOfDisplays: 1 },

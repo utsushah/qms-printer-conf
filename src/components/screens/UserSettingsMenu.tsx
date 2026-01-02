@@ -2,7 +2,7 @@ import React from 'react';
 import { 
   Languages, 
   Phone, 
-  Receipt, 
+  FileText, 
   Clock, 
   Ticket, 
   Wifi, 
@@ -39,7 +39,7 @@ const UserSettingsMenu: React.FC<UserSettingsMenuProps> = ({ onNavigate, onBack 
         />
         
         <MenuCard
-          icon={Receipt}
+          icon={FileText}
           title="Receipt Settings"
           description="Department, Firm & Message lines"
           onClick={() => onNavigate('receipt')}

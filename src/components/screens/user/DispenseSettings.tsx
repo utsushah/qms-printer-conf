@@ -47,7 +47,9 @@ const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
     }));
   };
 
-  const handleJump = () => {
+  const [jumpLoading, setJumpLoading] = useState(false);
+
+  const handleJump = async () => {
     if (!dispense.jumpToService) {
       toast({
         title: "Validation Error",
@@ -56,10 +58,32 @@ const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
       });
       return;
     }
-    toast({
-      title: "Token Jumped",
-      description: `Jumped to token ${dispense.jumpToNumber} for service ${dispense.jumpToService}`,
-    });
+
+    setJumpLoading(true);
+    try {
+      const result = await esp32Api.jumpToToken(dispense.jumpToService, dispense.jumpToNumber);
+      
+      if (result.success) {
+        toast({
+          title: "Token Jumped",
+          description: `Jumped to token ${dispense.jumpToNumber} for service ${dispense.jumpToService}`,
+        });
+      } else {
+        toast({
+          title: "Jump Failed",
+          description: result.error || "Failed to jump to token",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Jump Failed",
+        description: error instanceof Error ? error.message : "Failed to jump to token",
+        variant: "destructive",
+      });
+    } finally {
+      setJumpLoading(false);
+    }
   };
 
   const handleSave = async () => {
@@ -173,9 +197,9 @@ const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
               />
             </div>
 
-            <Button onClick={handleJump} variant="outline" className="w-full">
+            <Button onClick={handleJump} variant="outline" className="w-full" disabled={jumpLoading}>
               <ArrowRight className="h-4 w-4 mr-2" />
-              Jump to Token
+              {jumpLoading ? 'Jumping...' : 'Jump to Token'}
             </Button>
           </div>
         </Card>
