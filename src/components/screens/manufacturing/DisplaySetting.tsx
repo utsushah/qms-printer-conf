@@ -10,33 +10,43 @@ import { Label } from '@/components/ui/label';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { DisplaySettings as DisplaySettingsType } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface DisplaySettingProps {
   onBack: () => void;
 }
 
 const DisplaySetting: React.FC<DisplaySettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings, saveSettings } = useSettings();
+  const { settings, updateManufacturingSettings } = useSettings();
   const [display, setDisplay] = useState<DisplaySettingsType>(settings.manufacturing.display);
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
     setLoading(true);
-    updateManufacturingSettings({ display });
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Display settings updated successfully",
-      });
-    } else {
+    try {
+      const result = await esp32Api.saveDisplaySettings(display);
+      
+      if (result.success) {
+        updateManufacturingSettings({ display });
+        toast({
+          title: "Settings Saved",
+          description: "Display settings updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

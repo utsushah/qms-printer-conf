@@ -8,13 +8,14 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { RemoteSettings as RemoteSettingsType, ServiceCode } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface RemoteSettingProps {
   onBack: () => void;
 }
 
 const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings, saveSettings } = useSettings();
+  const { settings, updateManufacturingSettings } = useSettings();
   const [remote, setRemote] = useState<RemoteSettingsType>(settings.manufacturing.remote);
   const [loading, setLoading] = useState(false);
 
@@ -29,21 +30,30 @@ const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    updateManufacturingSettings({ remote });
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Remote settings updated successfully",
-      });
-    } else {
+    try {
+      const result = await esp32Api.saveRemoteSettings(remote);
+      
+      if (result.success) {
+        updateManufacturingSettings({ remote });
+        toast({
+          title: "Settings Saved",
+          description: "Remote settings updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

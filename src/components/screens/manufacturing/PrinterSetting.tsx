@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { PrinterSettings as PrinterSettingsType, PrinterModel } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface PrinterSettingProps {
   onBack: () => void;
@@ -19,7 +20,7 @@ const PRINTER_MODELS: { model: PrinterModel; name: string; description: string }
 ];
 
 const PrinterSetting: React.FC<PrinterSettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings, saveSettings } = useSettings();
+  const { settings, updateManufacturingSettings } = useSettings();
   const [printer, setPrinter] = useState<PrinterSettingsType>(settings.manufacturing.printer);
   const [loading, setLoading] = useState(false);
 
@@ -34,21 +35,30 @@ const PrinterSetting: React.FC<PrinterSettingProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    updateManufacturingSettings({ printer });
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Printer settings updated successfully",
-      });
-    } else {
+    try {
+      const result = await esp32Api.savePrinterSettings(printer);
+      
+      if (result.success) {
+        updateManufacturingSettings({ printer });
+        toast({
+          title: "Settings Saved",
+          description: "Printer settings updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

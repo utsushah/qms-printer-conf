@@ -8,18 +8,18 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { DispenseSettings as DispenseSettingsType, ServiceCode } from '@/types/settings';
 import { ArrowRight } from 'lucide-react';
+import { esp32Api } from '@/api/esp32';
 
 interface DispenseSettingsProps {
   onBack: () => void;
 }
 
 const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
-  const { settings, updateDispenseSettings, getActiveServices, saveSettings } = useSettings();
+  const { settings, updateDispenseSettings, getActiveServices } = useSettings();
   const [dispense, setDispense] = useState<DispenseSettingsType>(settings.user.dispense);
   const [loading, setLoading] = useState(false);
 
@@ -64,21 +64,30 @@ const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
 
   const handleSave = async () => {
     setLoading(true);
-    updateDispenseSettings(dispense);
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Dispense settings updated successfully",
-      });
-    } else {
+    try {
+      const result = await esp32Api.saveDispenseSettings(dispense);
+      
+      if (result.success) {
+        updateDispenseSettings(dispense);
+        toast({
+          title: "Settings Saved",
+          description: "Dispense settings updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

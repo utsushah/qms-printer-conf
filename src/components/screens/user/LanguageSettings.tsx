@@ -1,13 +1,13 @@
 import React, { useState } from 'react';
 import PageContainer from '@/components/layout/PageContainer';
 import SaveButton from '@/components/common/SaveButton';
-import SettingRow from '@/components/common/SettingRow';
 import { Card } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { Language } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface LanguageSettingsProps {
   onBack: () => void;
@@ -16,7 +16,7 @@ interface LanguageSettingsProps {
 const LANGUAGES: Language[] = ['English', 'Hindi', 'Gujarati'];
 
 const DisplayAudioLanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack }) => {
-  const { settings, updateLanguageSettings, saveSettings } = useSettings();
+  const { settings, updateLanguageSettings } = useSettings();
   const [firstLang, setFirstLang] = useState<Language>(settings.user.language.firstLanguage);
   const [secondLang, setSecondLang] = useState<Language>(settings.user.language.secondLanguage);
   const [loading, setLoading] = useState(false);
@@ -32,21 +32,31 @@ const DisplayAudioLanguageSettings: React.FC<LanguageSettingsProps> = ({ onBack 
     }
 
     setLoading(true);
-    updateLanguageSettings({ firstLanguage: firstLang, secondLanguage: secondLang });
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Language settings updated successfully",
-      });
-    } else {
+    try {
+      const languageData = { firstLanguage: firstLang, secondLanguage: secondLang };
+      const result = await esp32Api.saveLanguageSettings(languageData);
+      
+      if (result.success) {
+        updateLanguageSettings(languageData);
+        toast({
+          title: "Settings Saved",
+          description: "Language settings updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
