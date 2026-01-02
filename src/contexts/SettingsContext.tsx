@@ -102,7 +102,6 @@ interface SettingsContextType {
   validateServiceCount: (services: ServiceCode[]) => boolean;
   getModelLimit: (model: ModelType) => number;
   SERVICE_CODES: ServiceCode[];
-  saveSettings: (settingsToSave?: Partial<AllSettings>) => Promise<{ success: boolean; error?: string }>;
   loadSettings: () => Promise<void>;
 }
 
@@ -112,7 +111,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const [settings, setSettings] = useState<AllSettings>(defaultSettings);
   const [loading, setLoading] = useState(true);
 
-  // Load settings from ESP32 on mount
   const loadSettings = useCallback(async () => {
     setLoading(true);
     try {
@@ -127,7 +125,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
-      // Use default settings on error
     } finally {
       setLoading(false);
     }
@@ -152,18 +149,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
     }, 1000);
     return () => clearInterval(interval);
   }, []);
-
-  // Save settings to ESP32
-  const saveSettings = useCallback(async (settingsToSave?: Partial<AllSettings>): Promise<{ success: boolean; error?: string }> => {
-    try {
-      const dataToSave = settingsToSave || settings;
-      const response = await esp32Api.saveSettings(dataToSave);
-      return { success: response.success, error: response.error };
-    } catch (error) {
-      console.error('Failed to save settings:', error);
-      return { success: false, error: error instanceof Error ? error.message : 'Failed to save settings' };
-    }
-  }, [settings]);
 
   const updateLanguageSettings = useCallback((lang: LanguageSettings) => {
     setSettings(prev => ({
@@ -260,7 +245,6 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
       validateServiceCount,
       getModelLimit,
       SERVICE_CODES,
-      saveSettings,
       loadSettings,
     }}>
       {children}

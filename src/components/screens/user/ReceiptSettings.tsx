@@ -10,13 +10,14 @@ import { Label } from '@/components/ui/label';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { ReceiptSettings as ReceiptSettingsType } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface ReceiptSettingsProps {
   onBack: () => void;
 }
 
 const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
-  const { settings, updateReceiptSettings, saveSettings } = useSettings();
+  const { settings, updateReceiptSettings } = useSettings();
   const [receipt, setReceipt] = useState<ReceiptSettingsType>(settings.user.receipt);
   const [loading, setLoading] = useState(false);
 
@@ -83,21 +84,30 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    updateReceiptSettings(receipt);
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Receipt settings updated successfully",
-      });
-    } else {
+    try {
+      const result = await esp32Api.saveReceiptSettings(receipt);
+      
+      if (result.success) {
+        updateReceiptSettings(receipt);
+        toast({
+          title: "Settings Saved",
+          description: "Receipt settings updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Wifi, Cable, CircuitBoard, Check } from 'lucide-react';
+import { Wifi, Check } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import SaveButton from '@/components/common/SaveButton';
 import { Card } from '@/components/ui/card';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { ProtocolType } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface ProtocolSettingProps {
   onBack: () => void;
@@ -62,27 +63,36 @@ const PROTOCOLS: { type: ProtocolType; label: string; description: string; icon:
 ];
 
 const ProtocolSetting: React.FC<ProtocolSettingProps> = ({ onBack }) => {
-  const { settings, updateProtocol, saveSettings } = useSettings();
+  const { settings, updateProtocol } = useSettings();
   const [protocol, setProtocol] = useState<ProtocolType>(settings.manufacturing.protocol);
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
     setLoading(true);
-    updateProtocol(protocol);
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: `Protocol changed to ${protocol}`,
-      });
-    } else {
+    try {
+      const result = await esp32Api.saveProtocolSettings(protocol);
+      
+      if (result.success) {
+        updateProtocol(protocol);
+        toast({
+          title: "Settings Saved",
+          description: `Protocol changed to ${protocol}`,
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

@@ -6,33 +6,43 @@ import { Card } from '@/components/ui/card';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { CallingMethod } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface CallingMethodSettingsProps {
   onBack: () => void;
 }
 
 const CallingMethodSettings: React.FC<CallingMethodSettingsProps> = ({ onBack }) => {
-  const { settings, updateCallingMethod, saveSettings } = useSettings();
+  const { settings, updateCallingMethod } = useSettings();
   const [method, setMethod] = useState<CallingMethod>(settings.user.callingMethod);
   const [loading, setLoading] = useState(false);
 
   const handleSave = async () => {
     setLoading(true);
-    updateCallingMethod(method);
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Calling method updated successfully",
-      });
-    } else {
+    try {
+      const result = await esp32Api.saveCallingMethod(method);
+      
+      if (result.success) {
+        updateCallingMethod(method);
+        toast({
+          title: "Settings Saved",
+          description: "Calling method updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 

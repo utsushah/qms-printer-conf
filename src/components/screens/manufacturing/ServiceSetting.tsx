@@ -3,11 +3,10 @@ import { Check } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import SaveButton from '@/components/common/SaveButton';
 import { Card } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { ModelType, ServiceCode, ServiceSettings } from '@/types/settings';
+import { esp32Api } from '@/api/esp32';
 
 interface ServiceSettingProps {
   onBack: () => void;
@@ -20,7 +19,7 @@ const MODELS: { type: ModelType; label: string; limit: number; description: stri
 ];
 
 const ServiceSetting: React.FC<ServiceSettingProps> = ({ onBack }) => {
-  const { settings, updateManufacturingSettings, SERVICE_CODES, getModelLimit, saveSettings } = useSettings();
+  const { settings, updateManufacturingSettings, SERVICE_CODES, getModelLimit } = useSettings();
   const [service, setService] = useState<ServiceSettings>(settings.manufacturing.service);
   const [loading, setLoading] = useState(false);
 
@@ -64,21 +63,30 @@ const ServiceSetting: React.FC<ServiceSettingProps> = ({ onBack }) => {
     }
 
     setLoading(true);
-    updateManufacturingSettings({ service });
-    const result = await saveSettings();
-    setLoading(false);
-    
-    if (result.success) {
-      toast({
-        title: "Settings Saved",
-        description: "Service settings updated successfully",
-      });
-    } else {
+    try {
+      const result = await esp32Api.saveServiceSettings(service);
+      
+      if (result.success) {
+        updateManufacturingSettings({ service });
+        toast({
+          title: "Settings Saved",
+          description: "Service settings updated successfully",
+        });
+      } else {
+        toast({
+          title: "Save Failed",
+          description: result.error || "Failed to save settings",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
       toast({
         title: "Save Failed",
-        description: result.error || "Failed to save settings",
+        description: error instanceof Error ? error.message : "Failed to save settings",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
