@@ -7,14 +7,22 @@ import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
-import { DisplaySettings as DisplaySettingsType } from '@/types/settings';
+import { DisplaySettings as DisplaySettingsType, DigitSetting } from '@/types/settings';
 import { esp32Api } from '@/api/esp32';
 
 interface DisplaySettingProps {
   onBack: () => void;
 }
+
+const DIGIT_OPTIONS: { value: DigitSetting; label: string }[] = [
+  { value: 3, label: '3 Digit' },
+  { value: 4, label: '4 Digit' },
+  { value: 5, label: '5 Digit' },
+  { value: 6, label: '6 Digit' },
+];
 
 const DisplaySetting: React.FC<DisplaySettingProps> = ({ onBack }) => {
   const { settings, updateManufacturingSettings } = useSettings();
@@ -75,22 +83,44 @@ const DisplaySetting: React.FC<DisplaySettingProps> = ({ onBack }) => {
           </SettingRow>
           
           {display.counterDisplay.enabled && (
-            <div className="mt-3">
-              <Label className="text-sm text-muted-foreground">Number of Displays</Label>
-              <Input
-                type="number"
-                min={1}
-                max={99}
-                value={display.counterDisplay.numberOfDisplays}
-                onChange={(e) => setDisplay(prev => ({
-                  ...prev,
-                  counterDisplay: { 
-                    ...prev.counterDisplay, 
-                    numberOfDisplays: Math.max(1, Math.min(99, parseInt(e.target.value) || 1))
-                  }
-                }))}
-                className="mt-2 w-24"
-              />
+            <div className="mt-3 space-y-3">
+              <div>
+                <Label className="text-sm text-muted-foreground">Number of Displays</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={display.counterDisplay.numberOfDisplays}
+                  onChange={(e) => setDisplay(prev => ({
+                    ...prev,
+                    counterDisplay: { 
+                      ...prev.counterDisplay, 
+                      numberOfDisplays: Math.max(1, Math.min(99, parseInt(e.target.value) || 1))
+                    }
+                  }))}
+                  className="mt-2 w-24"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm text-muted-foreground">Digit Setting</Label>
+                <Select 
+                  value={String(display.counterDisplay.digitSetting)} 
+                  onValueChange={(v) => setDisplay(prev => ({
+                    ...prev,
+                    counterDisplay: { ...prev.counterDisplay, digitSetting: parseInt(v) as DigitSetting }
+                  }))}
+                >
+                  <SelectTrigger className="mt-2 w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIGIT_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
         </Card>
@@ -117,22 +147,44 @@ const DisplaySetting: React.FC<DisplaySettingProps> = ({ onBack }) => {
           </SettingRow>
           
           {display.waitingAreaDisplay.enabled && (
-            <div className="mt-3">
-              <Label className="text-sm text-muted-foreground">Number of Displays</Label>
-              <Input
-                type="number"
-                min={1}
-                max={99}
-                value={display.waitingAreaDisplay.numberOfDisplays}
-                onChange={(e) => setDisplay(prev => ({
-                  ...prev,
-                  waitingAreaDisplay: { 
-                    ...prev.waitingAreaDisplay, 
-                    numberOfDisplays: Math.max(1, Math.min(99, parseInt(e.target.value) || 1))
-                  }
-                }))}
-                className="mt-2 w-24"
-              />
+            <div className="mt-3 space-y-3">
+              <div>
+                <Label className="text-sm text-muted-foreground">Number of Displays</Label>
+                <Input
+                  type="number"
+                  min={1}
+                  max={99}
+                  value={display.waitingAreaDisplay.numberOfDisplays}
+                  onChange={(e) => setDisplay(prev => ({
+                    ...prev,
+                    waitingAreaDisplay: { 
+                      ...prev.waitingAreaDisplay, 
+                      numberOfDisplays: Math.max(1, Math.min(99, parseInt(e.target.value) || 1))
+                    }
+                  }))}
+                  className="mt-2 w-24"
+                />
+              </div>
+              
+              <div>
+                <Label className="text-sm text-muted-foreground">Digit Setting</Label>
+                <Select 
+                  value={String(display.waitingAreaDisplay.digitSetting)} 
+                  onValueChange={(v) => setDisplay(prev => ({
+                    ...prev,
+                    waitingAreaDisplay: { ...prev.waitingAreaDisplay, digitSetting: parseInt(v) as DigitSetting }
+                  }))}
+                >
+                  <SelectTrigger className="mt-2 w-32">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {DIGIT_OPTIONS.map(opt => (
+                      <SelectItem key={opt.value} value={String(opt.value)}>{opt.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           )}
         </Card>

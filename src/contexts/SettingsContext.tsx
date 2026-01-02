@@ -30,6 +30,8 @@ const defaultSettings: AllSettings = {
     language: {
       firstLanguage: 'English',
       secondLanguage: 'Hindi',
+      tokenLabel: 'Token No.',
+      counterLabel: 'Counter No.',
     },
     callingMethod: 'Next Button',
     receipt: {
@@ -77,12 +79,13 @@ const defaultSettings: AllSettings = {
       devices: [{ remoteId: '', serviceCode: 'A' }],
     },
     display: {
-      counterDisplay: { enabled: false, numberOfDisplays: 1 },
-      waitingAreaDisplay: { enabled: false, numberOfDisplays: 1 },
+      counterDisplay: { enabled: false, numberOfDisplays: 1, digitSetting: 3 },
+      waitingAreaDisplay: { enabled: false, numberOfDisplays: 1, digitSetting: 3 },
     },
     printer: {
       deviceModel: 'KP-628E',
       tokenCopies: 1,
+      printerId: '',
     },
     protocol: 'Wi-Fi',
   },

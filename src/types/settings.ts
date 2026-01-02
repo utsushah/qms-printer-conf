@@ -4,10 +4,15 @@ export type ServiceCode = 'A' | 'C' | 'E' | 'F' | 'H' | 'J' | 'L' | 'P' | 'U' | 
 export type ModelType = 'Easy' | 'Lite' | 'Classic';
 export type PrinterModel = 'KP-628E' | 'EP-260C';
 export type ProtocolType = 'Wi-Fi' | 'LAN' | 'RS485';
+export type TokenLabel = 'Token No.' | 'Order No.' | 'File No.';
+export type CounterLabel = 'Counter No.' | 'Room No.' | 'Desk No.';
+export type DigitSetting = 3 | 4 | 5 | 6;
 
 export interface LanguageSettings {
   firstLanguage: Language;
   secondLanguage: Language;
+  tokenLabel: TokenLabel;
+  counterLabel: CounterLabel;
 }
 
 export interface DepartmentSettings {
@@ -92,11 +97,13 @@ export interface RemoteSettings {
 export interface CounterDisplaySettings {
   enabled: boolean;
   numberOfDisplays: number;
+  digitSetting: DigitSetting;
 }
 
 export interface WaitingAreaDisplaySettings {
   enabled: boolean;
   numberOfDisplays: number;
+  digitSetting: DigitSetting;
 }
 
 export interface DisplaySettings {
@@ -107,6 +114,7 @@ export interface DisplaySettings {
 export interface PrinterSettings {
   deviceModel: PrinterModel;
   tokenCopies: number;
+  printerId: string;
 }
 
 export interface ManufacturingSettings {
