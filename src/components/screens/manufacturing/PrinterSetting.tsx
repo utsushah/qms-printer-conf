@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Printer, Copy, Check } from 'lucide-react';
+import { Printer, Copy, Check, Hash } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import SaveButton from '@/components/common/SaveButton';
 import { Card } from '@/components/ui/card';
@@ -29,6 +29,15 @@ const PrinterSetting: React.FC<PrinterSettingProps> = ({ onBack }) => {
       toast({
         title: "Validation Error",
         description: "Token copies must be between 1 and 10",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!printer.printerId.trim()) {
+      toast({
+        title: "Validation Error",
+        description: "Printer ID is required",
         variant: "destructive",
       });
       return;
@@ -65,6 +74,29 @@ const PrinterSetting: React.FC<PrinterSettingProps> = ({ onBack }) => {
   return (
     <PageContainer title="Printer Setting" showBack onBack={onBack}>
       <div className="space-y-4">
+        <Card className="p-4">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-10 h-10 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Hash className="h-5 w-5 text-primary" />
+            </div>
+            <div>
+              <h3 className="font-medium text-foreground">Printer ID</h3>
+              <p className="text-sm text-muted-foreground">Unique identifier for this printer</p>
+            </div>
+          </div>
+          
+          <div>
+            <Label className="text-sm text-muted-foreground">Printer ID</Label>
+            <Input
+              type="text"
+              value={printer.printerId}
+              onChange={(e) => setPrinter(prev => ({ ...prev, printerId: e.target.value }))}
+              placeholder="Enter Printer ID"
+              className="mt-2"
+            />
+          </div>
+        </Card>
+
         <Card className="p-4">
           <h3 className="font-medium text-foreground mb-4">Device Model</h3>
           <div className="space-y-2">
