@@ -162,5 +162,10 @@ export const esp32Api = {
       console.error('API Error:', error);
       throw error;
     }
+  },
+
+  // Factory Reset API
+  async factoryReset(): Promise<ApiResponse> {
+    return postRequest('/api/system/factory-reset', {});
   }
 };
