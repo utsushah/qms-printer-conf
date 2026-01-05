@@ -1,14 +1,27 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { 
   Settings2, 
   Radio, 
   Monitor, 
   Printer, 
   Network, 
-  Upload 
+  Upload,
+  RotateCcw
 } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import MenuCard from '@/components/layout/MenuCard';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { esp32Api } from '@/api/esp32';
+import { useToast } from '@/hooks/use-toast';
 
 interface ManufacturingMenuProps {
   onNavigate: (screen: string) => void;
@@ -16,6 +29,30 @@ interface ManufacturingMenuProps {
 }
 
 const ManufacturingMenu: React.FC<ManufacturingMenuProps> = ({ onNavigate, onBack }) => {
+  const [showResetDialog, setShowResetDialog] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const { toast } = useToast();
+
+  const handleFactoryReset = async () => {
+    setResetting(true);
+    try {
+      await esp32Api.factoryReset();
+      toast({
+        title: "Factory Reset Complete",
+        description: "All settings have been reset to defaults. Device will restart.",
+      });
+      setShowResetDialog(false);
+    } catch (error) {
+      toast({
+        title: "Reset Failed",
+        description: "Failed to reset device. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setResetting(false);
+    }
+  };
+
   return (
     <PageContainer title="Manufacturing Settings" showBack onBack={onBack}>
       <div className="space-y-3">
@@ -60,7 +97,35 @@ const ManufacturingMenu: React.FC<ManufacturingMenuProps> = ({ onNavigate, onBac
           description="Upload firmware update"
           onClick={() => onNavigate('mfg-update')}
         />
+
+        <MenuCard
+          icon={RotateCcw}
+          title="Factory Reset"
+          description="Reset all settings to defaults"
+          onClick={() => setShowResetDialog(true)}
+        />
       </div>
+
+      <AlertDialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Factory Reset</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will reset all settings to factory defaults. This action cannot be undone. The device will restart after reset.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resetting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleFactoryReset}
+              disabled={resetting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {resetting ? 'Resetting...' : 'Reset'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </PageContainer>
   );
 };
