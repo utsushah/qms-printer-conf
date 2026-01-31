@@ -59,11 +59,13 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
         <div className="text-center mb-8">
-          <img 
-            src="/equeue_logo.png" 
-            alt="eQueue Logo" 
-            className="w-24 h-24 mx-auto mb-4"
-          />
+          <div className="w-20 h-20 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
+            <img 
+              src="/equeue_logo.png" 
+              alt="eQueue Logo" 
+              className="w-14 h-14 object-contain"
+            />
+          </div>
           <h1 className="text-2xl font-bold text-foreground">QMS Printer</h1>
           <p className="text-muted-foreground text-sm mt-1">Configuration Panel</p>
         </div>
