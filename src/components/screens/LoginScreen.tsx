@@ -5,6 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Lock, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import equeueLogo from '@/assets/equeue_logo.png';
 
 interface LoginScreenProps {
   onLogin: () => void;
@@ -56,18 +57,19 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   };
 
   return (
-    <div className="min-h-screen bg-background flex flex-col items-center justify-center p-4">
+    <div className="min-h-screen bg-primary flex flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
+        {/* Logo - matching splash screen style */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 mx-auto mb-4 bg-primary/10 rounded-2xl flex items-center justify-center">
+          <div className="bg-white rounded-2xl px-6 py-4 mx-auto w-fit mb-4 shadow-lg">
             <img 
-              src="/equeue_logo.png" 
+              src={equeueLogo} 
               alt="eQueue Logo" 
-              className="w-14 h-14 object-contain"
+              className="h-12 object-contain"
             />
           </div>
-          <h1 className="text-2xl font-bold text-foreground">QMS Printer</h1>
-          <p className="text-muted-foreground text-sm mt-1">Configuration Panel</p>
+          <h1 className="text-2xl font-bold text-primary-foreground">QMS Printer</h1>
+          <p className="text-primary-foreground/70 text-sm mt-1">Configuration Panel</p>
         </div>
 
         <Card className="p-6">
@@ -130,7 +132,7 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
           </div>
         </Card>
 
-        <p className="text-center text-xs text-muted-foreground mt-6">
+        <p className="text-center text-xs text-primary-foreground/60 mt-6">
           © 2024 eQueue Systems
         </p>
       </div>

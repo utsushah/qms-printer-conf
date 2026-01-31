@@ -9,6 +9,7 @@ import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
 import { esp32Api, RemoteReportData } from '@/api/esp32';
 import { toast } from '@/hooks/use-toast';
+import * as XLSX from 'xlsx';
 
 const ReportTab: React.FC = () => {
   const { settings } = useSettings();
@@ -46,52 +47,56 @@ const ReportTab: React.FC = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      // Generate CSV content
-      const headers = ['Date', 'Remote ID', 'Service Code', 'Waiting Time (s)', 'Serving Time (s)', 'Turnaround Time (s)'];
-      const csvRows = [headers.join(',')];
+      // Prepare data for Excel
+      const excelData: any[] = [];
       
-      // Add data rows from reportData or generate from devices
       if (reportData.length > 0) {
         reportData.forEach(row => {
-          csvRows.push([
-            row.date,
-            row.remoteId,
-            row.serviceCode,
-            row.waitingTime,
-            row.servingTime,
-            row.turnaroundTime
-          ].join(','));
+          excelData.push({
+            'Date': row.date,
+            'Remote ID': row.remoteId,
+            'Service Code': row.serviceCode,
+            'Waiting Time (s)': row.waitingTime,
+            'Serving Time (s)': row.servingTime,
+            'Turnaround Time (s)': row.turnaroundTime
+          });
         });
       } else {
         // If no data, create empty rows for each device
         remoteDevices.forEach(device => {
-          csvRows.push([
-            format(startDate, 'yyyy-MM-dd'),
-            device.remoteId,
-            device.serviceCode,
-            '0',
-            '0',
-            '0'
-          ].join(','));
+          excelData.push({
+            'Date': format(startDate, 'yyyy-MM-dd'),
+            'Remote ID': device.remoteId,
+            'Service Code': device.serviceCode,
+            'Waiting Time (s)': 0,
+            'Serving Time (s)': 0,
+            'Turnaround Time (s)': 0
+          });
         });
       }
       
-      const csvContent = csvRows.join('\n');
-      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      // Create workbook and worksheet
+      const worksheet = XLSX.utils.json_to_sheet(excelData);
+      const workbook = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
       
-      // Create download link
-      const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `report_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}.csv`;
-      document.body.appendChild(a);
-      a.click();
-      window.URL.revokeObjectURL(url);
-      document.body.removeChild(a);
+      // Auto-size columns
+      const colWidths = [
+        { wch: 12 }, // Date
+        { wch: 15 }, // Remote ID
+        { wch: 15 }, // Service Code
+        { wch: 18 }, // Waiting Time
+        { wch: 18 }, // Serving Time
+        { wch: 20 }, // Turnaround Time
+      ];
+      worksheet['!cols'] = colWidths;
+      
+      // Generate Excel file and download
+      XLSX.writeFile(workbook, `report_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}.xlsx`);
       
       toast({
         title: "Export Successful",
-        description: "Report has been downloaded as CSV",
+        description: "Report has been downloaded as Excel file",
       });
     } catch (error) {
       toast({
@@ -174,7 +179,7 @@ const ReportTab: React.FC = () => {
 
           <Button onClick={handleExport} disabled={exporting} className="gap-2">
             <Download className="h-4 w-4" />
-            {exporting ? 'Exporting...' : 'Export CSV'}
+            {exporting ? 'Exporting...' : 'Export Excel'}
           </Button>
         </div>
       </Card>
