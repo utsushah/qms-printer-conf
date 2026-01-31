@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { CalendarIcon, Download, Radio, Clock, Timer, RotateCw } from 'lucide-react';
+import { CalendarIcon, Download, Radio, Clock, Timer, RotateCw, Hash, Ticket } from 'lucide-react';
 import { format } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
@@ -56,6 +56,8 @@ const ReportTab: React.FC = () => {
             'Date': row.date,
             'Remote ID': row.remoteId,
             'Service Code': row.serviceCode,
+            'Current Token': row.currentToken ?? 0,
+            'Issued Tokens': row.issuedTokens ?? 0,
             'Waiting Time (s)': row.waitingTime,
             'Serving Time (s)': row.servingTime,
             'Turnaround Time (s)': row.turnaroundTime
@@ -68,6 +70,8 @@ const ReportTab: React.FC = () => {
             'Date': format(startDate, 'yyyy-MM-dd'),
             'Remote ID': device.remoteId,
             'Service Code': device.serviceCode,
+            'Current Token': 0,
+            'Issued Tokens': 0,
             'Waiting Time (s)': 0,
             'Serving Time (s)': 0,
             'Turnaround Time (s)': 0
@@ -85,6 +89,8 @@ const ReportTab: React.FC = () => {
         { wch: 12 }, // Date
         { wch: 15 }, // Remote ID
         { wch: 15 }, // Service Code
+        { wch: 15 }, // Current Token
+        { wch: 15 }, // Issued Tokens
         { wch: 18 }, // Waiting Time
         { wch: 18 }, // Serving Time
         { wch: 20 }, // Turnaround Time
@@ -124,20 +130,20 @@ const ReportTab: React.FC = () => {
       {/* Date Filter */}
       <Card className="p-4">
         <h3 className="font-medium text-foreground mb-4">Date Filter</h3>
-        <div className="flex flex-wrap gap-3 items-end">
-          <div className="flex-1 min-w-[140px]">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
             <label className="text-sm text-muted-foreground mb-2 block">Start Date</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal text-xs sm:text-sm",
                     !startDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {startDate ? format(startDate, "PPP") : "Pick a date"}
+                  <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">{startDate ? format(startDate, "PP") : "Pick a date"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -151,19 +157,19 @@ const ReportTab: React.FC = () => {
             </Popover>
           </div>
 
-          <div className="flex-1 min-w-[140px]">
+          <div>
             <label className="text-sm text-muted-foreground mb-2 block">End Date</label>
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant="outline"
                   className={cn(
-                    "w-full justify-start text-left font-normal",
+                    "w-full justify-start text-left font-normal text-xs sm:text-sm",
                     !endDate && "text-muted-foreground"
                   )}
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
-                  {endDate ? format(endDate, "PPP") : "Pick a date"}
+                  <CalendarIcon className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="truncate">{endDate ? format(endDate, "PP") : "Pick a date"}</span>
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -176,8 +182,9 @@ const ReportTab: React.FC = () => {
               </PopoverContent>
             </Popover>
           </div>
-
-          <Button onClick={handleExport} disabled={exporting} className="gap-2">
+        </div>
+        <div className="mt-3">
+          <Button onClick={handleExport} disabled={exporting} className="gap-2 w-full sm:w-auto">
             <Download className="h-4 w-4" />
             {exporting ? 'Exporting...' : 'Export Excel'}
           </Button>
@@ -215,6 +222,26 @@ const ReportTab: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Hash className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Current Token</span>
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {report?.currentToken ?? '--'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
+                    <div className="flex items-center gap-2">
+                      <Ticket className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Issued Tokens</span>
+                    </div>
+                    <span className="font-medium text-foreground">
+                      {report?.issuedTokens ?? '--'}
+                    </span>
+                  </div>
+
                   <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
