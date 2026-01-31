@@ -15,7 +15,7 @@ import {
 } from '@/types/settings';
 import { esp32Api } from '@/api/esp32';
 
-const SERVICE_CODES: ServiceCode[] = ['A', 'C', 'E', 'F', 'H', 'J', 'L', 'P', 'U', 'Y'];
+const SERVICE_CODES: ServiceCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'H', 'I', 'J', 'L', 'N', 'P', 'Q', 'T', 'U', 'Y'];
 
 const getModelLimit = (model: ModelType): number => {
   switch (model) {

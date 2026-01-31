@@ -5,13 +5,10 @@ import SettingRow from '@/components/common/SettingRow';
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Button } from '@/components/ui/button';
 import { useSettings } from '@/contexts/SettingsContext';
 import { toast } from '@/hooks/use-toast';
 import { DispenseSettings as DispenseSettingsType, ServiceCode } from '@/types/settings';
-import { ArrowRight } from 'lucide-react';
 import { esp32Api } from '@/api/esp32';
 
 interface DispenseSettingsProps {
@@ -45,45 +42,6 @@ const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
         [service]: { ...prev.tokenStart[service], startNumber: num }
       }
     }));
-  };
-
-  const [jumpLoading, setJumpLoading] = useState(false);
-
-  const handleJump = async () => {
-    if (!dispense.jumpToService) {
-      toast({
-        title: "Validation Error",
-        description: "Please select a service to jump to",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setJumpLoading(true);
-    try {
-      const result = await esp32Api.jumpToToken(dispense.jumpToService, dispense.jumpToNumber);
-      
-      if (result.success) {
-        toast({
-          title: "Token Jumped",
-          description: `Jumped to token ${dispense.jumpToNumber} for service ${dispense.jumpToService}`,
-        });
-      } else {
-        toast({
-          title: "Jump Failed",
-          description: result.error || "Failed to jump to token",
-          variant: "destructive",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Jump Failed",
-        description: error instanceof Error ? error.message : "Failed to jump to token",
-        variant: "destructive",
-      });
-    } finally {
-      setJumpLoading(false);
-    }
   };
 
   const handleSave = async () => {
@@ -160,47 +118,6 @@ const DispenseSettings: React.FC<DispenseSettingsProps> = ({ onBack }) => {
                 )}
               </div>
             ))}
-          </div>
-        </Card>
-
-        <Card className="p-4">
-          <h3 className="font-medium text-foreground mb-4">Jump to Token</h3>
-          <p className="text-sm text-muted-foreground mb-4">Skip to a specific token number</p>
-          
-          <div className="space-y-3">
-            <div>
-              <Label className="text-sm text-muted-foreground">Select Service</Label>
-              <Select 
-                value={dispense.jumpToService || ''} 
-                onValueChange={(v) => setDispense(prev => ({ ...prev, jumpToService: v as ServiceCode }))}
-              >
-                <SelectTrigger className="mt-2">
-                  <SelectValue placeholder="Choose service" />
-                </SelectTrigger>
-                <SelectContent>
-                  {activeServices.map(service => (
-                    <SelectItem key={service} value={service}>Service {service}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
-            <div>
-              <Label className="text-sm text-muted-foreground">Token Number</Label>
-              <Input
-                type="number"
-                min={1}
-                max={9999}
-                value={dispense.jumpToNumber}
-                onChange={(e) => setDispense(prev => ({ ...prev, jumpToNumber: parseInt(e.target.value) || 1 }))}
-                className="mt-2"
-              />
-            </div>
-
-            <Button onClick={handleJump} variant="outline" className="w-full" disabled={jumpLoading}>
-              <ArrowRight className="h-4 w-4 mr-2" />
-              {jumpLoading ? 'Jumping...' : 'Jump to Token'}
-            </Button>
           </div>
         </Card>
       </div>

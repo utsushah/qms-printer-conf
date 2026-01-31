@@ -22,7 +22,7 @@ const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
   const activeServices = settings.manufacturing.service.activeServices;
 
   const handleDeviceCountChange = (count: number) => {
-    const newCount = Math.max(1, Math.min(10, count));
+    const newCount = Math.max(1, Math.min(99, count));
     const currentDevices = remote.devices;
     
     let newDevices: RemoteDevice[];
@@ -101,7 +101,7 @@ const RemoteSetting: React.FC<RemoteSettingProps> = ({ onBack }) => {
             <Input
               type="number"
               min={1}
-              max={10}
+              max={99}
               value={remote.numberOfDevices}
               onChange={(e) => handleDeviceCountChange(parseInt(e.target.value) || 1)}
               className="mt-2"

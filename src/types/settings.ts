@@ -1,6 +1,6 @@
 export type Language = 'English' | 'Hindi' | 'Gujarati';
 export type CallingMethod = 'Next Button' | 'Call Button';
-export type ServiceCode = 'A' | 'C' | 'E' | 'F' | 'H' | 'J' | 'L' | 'P' | 'U' | 'Y';
+export type ServiceCode = 'A' | 'B' | 'C' | 'D' | 'E' | 'F' | 'H' | 'I' | 'J' | 'L' | 'N' | 'P' | 'Q' | 'T' | 'U' | 'Y';
 export type ModelType = 'Easy' | 'Lite' | 'Classic';
 export type PrinterModel = 'KP-628E' | 'EP-260C';
 export type ProtocolType = 'Wi-Fi' | 'LAN' | 'RS485';
