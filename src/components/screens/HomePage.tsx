@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { Settings, FileText, LogOut } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import SettingsTab from './tabs/SettingsTab';
 import ReportTab from './tabs/ReportTab';
@@ -14,63 +13,86 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { cn } from '@/lib/utils';
 
 interface HomePageProps {
   onNavigate: (screen: string) => void;
   onLogout: () => void;
 }
 
+type TabType = 'settings' | 'report';
+
 const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLogout }) => {
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [activeTab, setActiveTab] = useState<TabType>('settings');
+
+  const tabs = [
+    { id: 'settings' as TabType, label: 'Settings', icon: Settings },
+    { id: 'report' as TabType, label: 'Report', icon: FileText },
+  ];
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border px-4 py-3">
+    <div className="min-h-screen bg-background flex flex-col">
+      {/* Header */}
+      <header className="bg-card border-b border-border px-4 py-3 flex-shrink-0">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src="/equeue_logo.png" 
-              alt="eQueue Logo" 
-              className="w-8 h-8"
-            />
-            <h1 className="text-lg font-semibold text-foreground">QMS Printer</h1>
+            <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
+              <img 
+                src="/equeue_logo.png" 
+                alt="eQueue Logo" 
+                className="w-6 h-6 object-contain"
+              />
+            </div>
+            <div>
+              <h1 className="text-base font-semibold text-foreground leading-tight">QMS Printer</h1>
+              <p className="text-xs text-muted-foreground">Configuration</p>
+            </div>
           </div>
           <Button 
             variant="ghost" 
             size="icon"
             onClick={() => setShowLogoutDialog(true)}
+            className="text-muted-foreground hover:text-foreground"
           >
             <LogOut className="h-5 w-5" />
           </Button>
         </div>
       </header>
 
-      <Tabs defaultValue="settings" className="w-full">
-        <TabsList className="w-full rounded-none border-b bg-card h-12">
-          <TabsTrigger 
-            value="settings" 
-            className="flex-1 h-full data-[state=active]:bg-primary/10"
-          >
-            <Settings className="h-4 w-4 mr-2" />
-            Settings
-          </TabsTrigger>
-          <TabsTrigger 
-            value="report" 
-            className="flex-1 h-full data-[state=active]:bg-primary/10"
-          >
-            <FileText className="h-4 w-4 mr-2" />
-            Report
-          </TabsTrigger>
-        </TabsList>
+      {/* Tab Navigation */}
+      <div className="bg-card border-b border-border px-4 flex-shrink-0">
+        <div className="flex gap-1">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={cn(
+                  "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all relative",
+                  isActive 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                <Icon className="h-4 w-4" />
+                {tab.label}
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-t-full" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-        <TabsContent value="settings" className="mt-0">
-          <SettingsTab onNavigate={onNavigate} />
-        </TabsContent>
-
-        <TabsContent value="report" className="mt-0">
-          <ReportTab />
-        </TabsContent>
-      </Tabs>
+      {/* Tab Content */}
+      <div className="flex-1 overflow-auto">
+        {activeTab === 'settings' && <SettingsTab onNavigate={onNavigate} />}
+        {activeTab === 'report' && <ReportTab />}
+      </div>
 
       <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
         <AlertDialogContent>
