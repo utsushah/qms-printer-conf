@@ -1,6 +1,7 @@
 import React, { useState, useCallback } from 'react';
 import SplashScreen from './screens/SplashScreen';
-import MainMenu from './screens/MainMenu';
+import LoginScreen from './screens/LoginScreen';
+import HomePage from './screens/HomePage';
 import UserSettingsMenu from './screens/UserSettingsMenu';
 import ManufacturingMenu from './screens/ManufacturingMenu';
 import LanguageSettings from './screens/user/LanguageSettings';
@@ -19,7 +20,8 @@ import SoftwareUpdate from './screens/manufacturing/SoftwareUpdate';
 
 type Screen = 
   | 'splash'
-  | 'main'
+  | 'login'
+  | 'home'
   | 'user'
   | 'manufacturing'
   | 'language'
@@ -47,18 +49,26 @@ const AppNavigator: React.FC = () => {
 
   const goBack = useCallback(() => {
     const newHistory = [...screenHistory];
-    const previousScreen = newHistory.pop() || 'main';
+    const previousScreen = newHistory.pop() || 'home';
     setScreenHistory(newHistory);
     setCurrentScreen(previousScreen);
   }, [screenHistory]);
 
+  const handleLogout = useCallback(() => {
+    setScreenHistory([]);
+    setCurrentScreen('login');
+  }, []);
+
   const renderScreen = () => {
     switch (currentScreen) {
       case 'splash':
-        return <SplashScreen onComplete={() => setCurrentScreen('main')} />;
+        return <SplashScreen onComplete={() => setCurrentScreen('login')} />;
       
-      case 'main':
-        return <MainMenu onNavigate={(s) => navigateTo(s as Screen)} />;
+      case 'login':
+        return <LoginScreen onLogin={() => setCurrentScreen('home')} />;
+      
+      case 'home':
+        return <HomePage onNavigate={(s) => navigateTo(s as Screen)} onLogout={handleLogout} />;
       
       case 'user':
         return <UserSettingsMenu onNavigate={(s) => navigateTo(s as Screen)} onBack={goBack} />;
@@ -97,7 +107,7 @@ const AppNavigator: React.FC = () => {
         return <SoftwareUpdate onBack={goBack} />;
       
       default:
-        return <MainMenu onNavigate={(s) => navigateTo(s as Screen)} />;
+        return <HomePage onNavigate={(s) => navigateTo(s as Screen)} onLogout={handleLogout} />;
     }
   };
 

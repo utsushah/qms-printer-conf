@@ -18,6 +18,15 @@ export interface ApiResponse {
   error?: string;
 }
 
+export interface RemoteReportData {
+  date: string;
+  remoteId: string;
+  serviceCode: string;
+  waitingTime: number; // in seconds
+  servingTime: number; // in seconds
+  turnaroundTime: number; // in seconds
+}
+
 // Helper function for POST requests
 const postRequest = async <T>(endpoint: string, data: T): Promise<ApiResponse> => {
   try {
@@ -167,5 +176,29 @@ export const esp32Api = {
   // Factory Reset API
   async factoryReset(): Promise<ApiResponse> {
     return postRequest('/api/system/factory-reset', {});
+  },
+
+  // Report APIs
+  async getRemoteReport(startDate: string, endDate: string): Promise<RemoteReportData[]> {
+    try {
+      const res = await fetch(`${API_BASE}/api/report/remote?startDate=${startDate}&endDate=${endDate}`);
+      if (!res.ok) throw new Error('Failed to fetch report');
+      return res.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      // Return mock data for demo
+      return [];
+    }
+  },
+
+  async exportRemoteReport(startDate: string, endDate: string): Promise<Blob> {
+    try {
+      const res = await fetch(`${API_BASE}/api/report/remote/export?startDate=${startDate}&endDate=${endDate}`);
+      if (!res.ok) throw new Error('Failed to export report');
+      return res.blob();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
   }
 };
