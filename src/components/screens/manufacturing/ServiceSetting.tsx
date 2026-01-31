@@ -14,8 +14,8 @@ interface ServiceSettingProps {
 
 const MODELS: { type: ModelType; label: string; limit: number; description: string }[] = [
   { type: 'Easy', label: 'Easy', limit: 1, description: '1 Service' },
-  { type: 'Lite', label: 'Lite', limit: 4, description: '4 Services' },
-  { type: 'Classic', label: 'Classic', limit: 8, description: '8 Services' },
+  { type: 'Lite', label: 'Lite', limit: 8, description: '8 Services' },
+  { type: 'Classic', label: 'Classic', limit: 16, description: '16 Services' },
 ];
 
 const ServiceSetting: React.FC<ServiceSettingProps> = ({ onBack }) => {
