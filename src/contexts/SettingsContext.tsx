@@ -20,8 +20,8 @@ const SERVICE_CODES: ServiceCode[] = ['A', 'B', 'C', 'D', 'E', 'F', 'H', 'I', 'J
 const getModelLimit = (model: ModelType): number => {
   switch (model) {
     case 'Easy': return 1;
-    case 'Lite': return 4;
-    case 'Classic': return 8;
+    case 'Lite': return 8;
+    case 'Classic': return 16;
   }
 };
 
