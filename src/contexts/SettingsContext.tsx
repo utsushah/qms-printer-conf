@@ -117,13 +117,13 @@ export const SettingsProvider: React.FC<{ children: ReactNode }> = ({ children }
   const loadSettings = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await esp32Api.getSettings();
-      if (data) {
+      const data = await esp32Api.getSettings() as Partial<AllSettings> | null;
+      if (data && typeof data === 'object') {
         setSettings(prev => ({
           ...prev,
-          ...data,
-          user: { ...prev.user, ...data.user },
-          manufacturing: { ...prev.manufacturing, ...data.manufacturing },
+          ...(data as Partial<AllSettings>),
+          user: { ...prev.user, ...(data.user || {}) },
+          manufacturing: { ...prev.manufacturing, ...(data.manufacturing || {}) },
         }));
       }
     } catch (error) {

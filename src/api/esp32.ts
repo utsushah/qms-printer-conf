@@ -10,6 +10,13 @@ import {
   ProtocolType,
   ServiceCode
 } from '@/types/settings';
+import { 
+  getAuthHeaders, 
+  setSession, 
+  clearSession, 
+  LoginCredentials, 
+  LoginResponse 
+} from '@/lib/auth';
 
 const API_BASE = ''; // Empty for same-origin requests to ESP32
 
@@ -27,14 +34,26 @@ export interface RemoteReportData {
   turnaroundTime: number; // in seconds
 }
 
-// Helper function for POST requests
+// Helper function to get headers with authentication
+const getRequestHeaders = (): Record<string, string> => {
+  return {
+    'Content-Type': 'application/json',
+    ...getAuthHeaders(),
+  };
+};
+
+// Helper function for POST requests with authentication
 const postRequest = async <T>(endpoint: string, data: T): Promise<ApiResponse> => {
   try {
     const res = await fetch(`${API_BASE}${endpoint}`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: getRequestHeaders(),
       body: JSON.stringify(data)
     });
+    if (res.status === 401) {
+      clearSession();
+      throw new Error('Session expired. Please login again.');
+    }
     if (!res.ok) throw new Error(`Failed to save to ${endpoint}`);
     return res.json();
   } catch (error) {
@@ -43,17 +62,68 @@ const postRequest = async <T>(endpoint: string, data: T): Promise<ApiResponse> =
   }
 };
 
+// Helper function for GET requests with authentication
+const getRequest = async <T>(endpoint: string): Promise<T> => {
+  try {
+    const res = await fetch(`${API_BASE}${endpoint}`, {
+      headers: getRequestHeaders(),
+    });
+    if (res.status === 401) {
+      clearSession();
+      throw new Error('Session expired. Please login again.');
+    }
+    if (!res.ok) throw new Error(`Failed to fetch from ${endpoint}`);
+    return res.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+
 export const esp32Api = {
+  // Authentication API - validates credentials on ESP32 device
+  async login(credentials: LoginCredentials): Promise<LoginResponse> {
+    try {
+      const res = await fetch(`${API_BASE}/api/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(credentials)
+      });
+      
+      const data = await res.json();
+      
+      if (data.success && data.token) {
+        // Store session token (default 1 hour expiry if not specified)
+        setSession(data.token, data.expiresIn || 3600);
+      }
+      
+      return data;
+    } catch (error) {
+      console.error('Login Error:', error);
+      // Fallback for demo/development when ESP32 is not available
+      // In production, the ESP32 should handle all authentication
+      return { success: false, error: 'Unable to connect to device' };
+    }
+  },
+
+  // Logout - clear session
+  async logout(): Promise<void> {
+    try {
+      await postRequest('/api/auth/logout', {});
+    } catch {
+      // Ignore errors, just clear local session
+    }
+    clearSession();
+  },
+
+  // Manufacturing access verification - validates on ESP32
+  async verifyManufacturingAccess(password: string): Promise<ApiResponse> {
+    return postRequest('/api/auth/manufacturing', { password });
+  },
+
   // GET - Fetch all settings at once
   async getSettings() {
-    try {
-      const res = await fetch(`${API_BASE}/api/settings`);
-      if (!res.ok) throw new Error('Failed to fetch settings');
-      return res.json();
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
+    return getRequest('/api/settings');
   },
 
   // Individual POST APIs for each setting
@@ -100,14 +170,7 @@ export const esp32Api = {
 
   // WiFi APIs
   async scanWifi(): Promise<Array<{ ssid: string; strength: number; secured: boolean }>> {
-    try {
-      const res = await fetch(`${API_BASE}/api/wifi/scan`);
-      if (!res.ok) throw new Error('Failed to scan WiFi');
-      return res.json();
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
+    return getRequest('/api/wifi/scan');
   },
 
   async connectWifi(ssid: string, password: string): Promise<ApiResponse> {
@@ -116,14 +179,7 @@ export const esp32Api = {
 
   // DateTime APIs
   async getDateTime(): Promise<{ timestamp: number }> {
-    try {
-      const res = await fetch(`${API_BASE}/api/datetime`);
-      if (!res.ok) throw new Error('Failed to get datetime');
-      return res.json();
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
+    return getRequest('/api/datetime');
   },
 
   async syncDateTime(): Promise<ApiResponse> {
@@ -132,20 +188,14 @@ export const esp32Api = {
 
   // System Info API
   async getSystemInfo(): Promise<{ systemInfo: string; softwareVersion: string; protocolType: string }> {
-    try {
-      const res = await fetch(`${API_BASE}/api/info`);
-      if (!res.ok) throw new Error('Failed to get system info');
-      return res.json();
-    } catch (error) {
-      console.error('API Error:', error);
-      throw error;
-    }
+    return getRequest('/api/info');
   },
 
   // Firmware Update API
   async uploadFirmware(file: File, onProgress?: (progress: number) => void): Promise<ApiResponse> {
     try {
       const xhr = new XMLHttpRequest();
+      const authHeaders = getAuthHeaders();
 
       return new Promise((resolve, reject) => {
         xhr.upload.addEventListener('progress', (e) => {
@@ -155,6 +205,11 @@ export const esp32Api = {
         });
 
         xhr.addEventListener('load', () => {
+          if (xhr.status === 401) {
+            clearSession();
+            reject(new Error('Session expired. Please login again.'));
+            return;
+          }
           if (xhr.status >= 200 && xhr.status < 300) {
             resolve(JSON.parse(xhr.responseText));
           } else {
@@ -165,6 +220,12 @@ export const esp32Api = {
         xhr.addEventListener('error', () => reject(new Error('Upload failed')));
 
         xhr.open('POST', `${API_BASE}/api/firmware/update`);
+        
+        // Set auth header if available
+        if (authHeaders.Authorization) {
+          xhr.setRequestHeader('Authorization', authHeaders.Authorization);
+        }
+        
         xhr.send(file);
       });
     } catch (error) {
@@ -181,19 +242,24 @@ export const esp32Api = {
   // Report APIs
   async getRemoteReport(startDate: string, endDate: string): Promise<RemoteReportData[]> {
     try {
-      const res = await fetch(`${API_BASE}/api/report/remote?startDate=${startDate}&endDate=${endDate}`);
-      if (!res.ok) throw new Error('Failed to fetch report');
-      return res.json();
+      return await getRequest(`/api/report/remote?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`);
     } catch (error) {
       console.error('API Error:', error);
-      // Return mock data for demo
+      // Return empty array for demo
       return [];
     }
   },
 
   async exportRemoteReport(startDate: string, endDate: string): Promise<Blob> {
     try {
-      const res = await fetch(`${API_BASE}/api/report/remote/export?startDate=${startDate}&endDate=${endDate}`);
+      const res = await fetch(
+        `${API_BASE}/api/report/remote/export?startDate=${encodeURIComponent(startDate)}&endDate=${encodeURIComponent(endDate)}`,
+        { headers: getRequestHeaders() }
+      );
+      if (res.status === 401) {
+        clearSession();
+        throw new Error('Session expired. Please login again.');
+      }
       if (!res.ok) throw new Error('Failed to export report');
       return res.blob();
     } catch (error) {
