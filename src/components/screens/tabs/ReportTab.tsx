@@ -46,16 +46,44 @@ const ReportTab: React.FC = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const blob = await esp32Api.exportRemoteReport(
-        format(startDate, 'yyyy-MM-dd'),
-        format(endDate, 'yyyy-MM-dd')
-      );
+      // Generate CSV content
+      const headers = ['Date', 'Remote ID', 'Service Code', 'Waiting Time (s)', 'Serving Time (s)', 'Turnaround Time (s)'];
+      const csvRows = [headers.join(',')];
+      
+      // Add data rows from reportData or generate from devices
+      if (reportData.length > 0) {
+        reportData.forEach(row => {
+          csvRows.push([
+            row.date,
+            row.remoteId,
+            row.serviceCode,
+            row.waitingTime,
+            row.servingTime,
+            row.turnaroundTime
+          ].join(','));
+        });
+      } else {
+        // If no data, create empty rows for each device
+        remoteDevices.forEach(device => {
+          csvRows.push([
+            format(startDate, 'yyyy-MM-dd'),
+            device.remoteId,
+            device.serviceCode,
+            '0',
+            '0',
+            '0'
+          ].join(','));
+        });
+      }
+      
+      const csvContent = csvRows.join('\n');
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       
       // Create download link
       const url = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `report_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}.xlsx`;
+      a.download = `report_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}.csv`;
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
@@ -63,7 +91,7 @@ const ReportTab: React.FC = () => {
       
       toast({
         title: "Export Successful",
-        description: "Report has been downloaded",
+        description: "Report has been downloaded as CSV",
       });
     } catch (error) {
       toast({
@@ -146,7 +174,7 @@ const ReportTab: React.FC = () => {
 
           <Button onClick={handleExport} disabled={exporting} className="gap-2">
             <Download className="h-4 w-4" />
-            {exporting ? 'Exporting...' : 'Export Excel'}
+            {exporting ? 'Exporting...' : 'Export CSV'}
           </Button>
         </div>
       </Card>
