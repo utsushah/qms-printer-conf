@@ -32,6 +32,8 @@ export interface RemoteReportData {
   waitingTime: number; // in seconds
   servingTime: number; // in seconds
   turnaroundTime: number; // in seconds
+  currentToken?: number;
+  issuedTokens?: number;
 }
 
 // Helper function to get headers with authentication
