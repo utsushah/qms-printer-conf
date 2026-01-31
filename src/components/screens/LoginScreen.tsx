@@ -5,14 +5,12 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Lock, User } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { esp32Api } from '@/api/esp32';
 import equeueLogo from '@/assets/equeue_logo.png';
 
 interface LoginScreenProps {
   onLogin: () => void;
 }
-
-const ADMIN_USER = 'admin';
-const ADMIN_PASS = 'admin';
 
 const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
   const [username, setUsername] = useState('');
@@ -29,20 +27,28 @@ const LoginScreen: React.FC<LoginScreenProps> = ({ onLogin }) => {
     setLoading(true);
     setError('');
 
-    // Simulate API delay
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    if (username === ADMIN_USER && password === ADMIN_PASS) {
+    try {
+      const response = await esp32Api.login({ username: username.trim(), password: password.trim() });
+      
+      if (response.success) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome to QMS Printer Configuration",
+        });
+        onLogin();
+      } else {
+        setError(response.error || 'Invalid username or password');
+        toast({
+          title: "Login Failed",
+          description: response.error || "Invalid credentials. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      setError('Unable to connect to device');
       toast({
-        title: "Login Successful",
-        description: "Welcome to QMS Printer Configuration",
-      });
-      onLogin();
-    } else {
-      setError('Invalid username or password');
-      toast({
-        title: "Login Failed",
-        description: "Invalid credentials. Please try again.",
+        title: "Connection Error",
+        description: "Unable to connect to the device. Please check your connection.",
         variant: "destructive",
       });
     }

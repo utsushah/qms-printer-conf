@@ -6,36 +6,56 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } f
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { esp32Api } from '@/api/esp32';
 
 interface MainMenuProps {
   onNavigate: (screen: string) => void;
 }
 
-const MANUFACTURING_PASSWORD = '1234';
-
 const MainMenu: React.FC<MainMenuProps> = ({ onNavigate }) => {
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
 
-  const handleManufacturingAccess = () => {
-    if (password === MANUFACTURING_PASSWORD) {
-      setShowPasswordDialog(false);
-      setPassword('');
-      setError('');
-      onNavigate('manufacturing');
+  const handleManufacturingAccess = async () => {
+    if (!password.trim()) {
+      setError('Please enter password');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+
+    try {
+      const response = await esp32Api.verifyManufacturingAccess(password.trim());
+      
+      if (response.success) {
+        setShowPasswordDialog(false);
+        setPassword('');
+        onNavigate('manufacturing');
+        toast({
+          title: "Access Granted",
+          description: "Welcome to Manufacturing Settings",
+        });
+      } else {
+        setError(response.error || 'Incorrect password');
+        toast({
+          title: "Access Denied",
+          description: response.error || "Incorrect password. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } catch (err) {
+      setError('Unable to verify access');
       toast({
-        title: "Access Granted",
-        description: "Welcome to Manufacturing Settings",
-      });
-    } else {
-      setError('Incorrect password');
-      toast({
-        title: "Access Denied",
-        description: "Incorrect password. Please try again.",
+        title: "Connection Error",
+        description: "Unable to connect to the device.",
         variant: "destructive",
       });
     }
+
+    setLoading(false);
   };
 
   return (
@@ -89,6 +109,7 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate }) => {
               <Button 
                 variant="outline" 
                 className="flex-1"
+                disabled={loading}
                 onClick={() => {
                   setShowPasswordDialog(false);
                   setPassword('');
@@ -99,9 +120,10 @@ const MainMenu: React.FC<MainMenuProps> = ({ onNavigate }) => {
               </Button>
               <Button 
                 className="flex-1"
+                disabled={loading}
                 onClick={handleManufacturingAccess}
               >
-                Access
+                {loading ? 'Verifying...' : 'Access'}
               </Button>
             </div>
           </div>
