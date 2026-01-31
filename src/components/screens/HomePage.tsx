@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Settings, FileText, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import SettingsTab from './tabs/SettingsTab';
+import equeueLogo from '@/assets/equeue_logo.png';
 import ReportTab from './tabs/ReportTab';
 import {
   AlertDialog,
@@ -33,36 +34,26 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLogout }) => {
 
   return (
     <div className="min-h-screen bg-background flex flex-col">
-      {/* Header */}
-      <header className="bg-card border-b border-border px-4 py-3 flex-shrink-0">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 bg-primary/10 rounded-lg flex items-center justify-center">
-              <img 
-                src="/equeue_logo.png" 
-                alt="eQueue Logo" 
-                className="w-6 h-6 object-contain"
-              />
-            </div>
-            <div>
-              <h1 className="text-base font-semibold text-foreground leading-tight">QMS Printer</h1>
-              <p className="text-xs text-muted-foreground">Configuration</p>
-            </div>
-          </div>
-          <Button 
-            variant="ghost" 
-            size="icon"
-            onClick={() => setShowLogoutDialog(true)}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <LogOut className="h-5 w-5" />
-          </Button>
+      {/* Header - matching settings page style */}
+      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50 shadow-sm flex-shrink-0">
+        <div className="flex items-center gap-3 flex-1">
+          <img src={equeueLogo} alt="eQueue" className="h-8" />
+          <div className="w-px h-6 bg-border" />
+          <h1 className="text-lg font-semibold text-foreground">QMS Printer</h1>
         </div>
+        <Button 
+          variant="ghost" 
+          size="icon"
+          onClick={() => setShowLogoutDialog(true)}
+          className="text-muted-foreground hover:text-foreground"
+        >
+          <LogOut className="h-5 w-5" />
+        </Button>
       </header>
 
-      {/* Tab Navigation */}
-      <div className="bg-card border-b border-border px-4 flex-shrink-0">
-        <div className="flex gap-1">
+      {/* Tab Navigation - Centered */}
+      <div className="bg-card border-b border-border flex-shrink-0">
+        <div className="flex justify-center gap-1">
           {tabs.map((tab) => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.id;
@@ -71,7 +62,7 @@ const HomePage: React.FC<HomePageProps> = ({ onNavigate, onLogout }) => {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-2 px-4 py-3 text-sm font-medium transition-all relative",
+                  "flex items-center gap-2 px-6 py-3 text-sm font-medium transition-all relative",
                   isActive 
                     ? "text-primary" 
                     : "text-muted-foreground hover:text-foreground"
