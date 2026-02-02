@@ -27,6 +27,7 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
   const [networks, setNetworks] = useState<WiFiNetwork[]>([]);
   const [scanning, setScanning] = useState(false);
   const [connecting, setConnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<string>('');
   const [selectedNetwork, setSelectedNetwork] = useState<WiFiNetwork | null>(null);
   const [password, setPassword] = useState('');
   const [connectedSSID, setConnectedSSID] = useState(settings.user.wifi.currentSSID);
@@ -63,6 +64,38 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
     }
   }, [isWiFiProtocol]);
 
+  // Poll WiFi status every 1 second
+  useEffect(() => {
+    if (!isWiFiProtocol) return;
+
+    const pollStatus = async () => {
+      try {
+        const status = await esp32Api.getWifiStatus();
+        if (status.currentSSID) {
+          setConnectedSSID(status.currentSSID);
+        }
+        if (status.connected) {
+          setConnectionStatus('connected');
+          setConnecting(false);
+        } else if (status.status === 'connecting') {
+          setConnectionStatus('connecting');
+        } else {
+          setConnectionStatus('');
+          if (!status.currentSSID) {
+            setConnectedSSID('');
+          }
+        }
+      } catch (error) {
+        // Silently fail on polling errors
+      }
+    };
+
+    const intervalId = setInterval(pollStatus, 1000);
+    pollStatus(); // Initial poll
+
+    return () => clearInterval(intervalId);
+  }, [isWiFiProtocol]);
+
   const getSignalIcon = (strength: number) => {
     if (strength >= 75) return <SignalHigh className="h-5 w-5 text-success" />;
     if (strength >= 50) return <SignalMedium className="h-5 w-5 text-warning" />;
@@ -81,15 +114,22 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
     }
 
     setConnecting(true);
+    setConnectionStatus('connecting');
     try {
       const result = await esp32Api.connectWifi(selectedNetwork?.ssid || '', password);
       if (result.success) {
-        setConnectedSSID(selectedNetwork?.ssid || '');
-        toast({
-          title: "Connected",
-          description: `Successfully connected to ${selectedNetwork?.ssid}`,
-        });
+        // Status will be updated by polling
+        if (result.status !== 'connecting') {
+          setConnectedSSID(result.currentSSID || selectedNetwork?.ssid || '');
+          setConnectionStatus('connected');
+          toast({
+            title: "Connected",
+            description: `Successfully connected to ${selectedNetwork?.ssid}`,
+          });
+        }
       } else {
+        setConnectionStatus('');
+        setConnecting(false);
         toast({
           title: "Connection Failed",
           description: result.error || "Failed to connect to network",
@@ -97,13 +137,13 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
         });
       }
     } catch (error) {
+      setConnectionStatus('');
       toast({
         title: "Connection Failed",
         description: "Failed to connect to network",
         variant: "destructive",
       });
     } finally {
-      setConnecting(false);
       setSelectedNetwork(null);
       setPassword('');
     }
@@ -128,15 +168,21 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
 
   return (
     <PageContainer title="Wi-Fi Settings" showBack onBack={onBack}>
-      {connectedSSID && (
-        <Card className="p-4 mb-4 border-success/30 bg-success/5">
+      {(connectedSSID || connectionStatus === 'connecting') && (
+        <Card className={`p-4 mb-4 ${connectionStatus === 'connecting' ? 'border-warning/30 bg-warning/5' : 'border-success/30 bg-success/5'}`}>
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg bg-success/20 flex items-center justify-center">
-              <Check className="h-5 w-5 text-success" />
+            <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${connectionStatus === 'connecting' ? 'bg-warning/20' : 'bg-success/20'}`}>
+              {connectionStatus === 'connecting' ? (
+                <RefreshCw className="h-5 w-5 text-warning animate-spin" />
+              ) : (
+                <Check className="h-5 w-5 text-success" />
+              )}
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">Connected to</p>
-              <p className="font-medium text-foreground">{connectedSSID}</p>
+              <p className="text-sm text-muted-foreground">
+                {connectionStatus === 'connecting' ? 'Connecting to' : 'Connected to'}
+              </p>
+              <p className="font-medium text-foreground">{connectedSSID || selectedNetwork?.ssid}</p>
             </div>
           </div>
         </Card>
