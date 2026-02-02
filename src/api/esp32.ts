@@ -171,7 +171,7 @@ export const esp32Api = {
   },
 
   // WiFi APIs
-  async scanWifi(): Promise<Array<{ ssid: string; strength: number; secured: boolean }>> {
+  async scanWifi(): Promise<{ networks: Array<{ ssid: string; strength: number; secured: boolean }>; connectedSSID: string | null }> {
     return getRequest('/api/wifi/scan');
   },
 
