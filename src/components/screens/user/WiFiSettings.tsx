@@ -36,11 +36,14 @@ const WiFiSettings: React.FC<WiFiSettingsProps> = ({ onBack }) => {
   const scanNetworks = async () => {
     setScanning(true);
     try {
-      const scannedNetworks = await esp32Api.scanWifi();
-      setNetworks(scannedNetworks);
+      const result = await esp32Api.scanWifi();
+      setNetworks(result.networks);
+      if (result.connectedSSID) {
+        setConnectedSSID(result.connectedSSID);
+      }
       toast({
         title: "Scan Complete",
-        description: `Found ${scannedNetworks.length} networks`,
+        description: `Found ${result.networks.length} networks`,
       });
     } catch (error) {
       // Fallback to mock data if API fails
