@@ -175,8 +175,12 @@ export const esp32Api = {
     return getRequest('/api/wifi/scan');
   },
 
-  async connectWifi(ssid: string, password: string): Promise<ApiResponse> {
-    return postRequest('/api/wifi/connect', { ssid, password });
+  async connectWifi(ssid: string, password: string): Promise<{ success: boolean; status?: string; currentSSID?: string; error?: string }> {
+    return postRequest('/api/wifi/connect', { ssid, password }) as Promise<{ success: boolean; status?: string; currentSSID?: string; error?: string }>;
+  },
+
+  async getWifiStatus(): Promise<{ connected: boolean; status?: string; currentSSID?: string }> {
+    return getRequest('/api/wifi/status');
   },
 
   // DateTime APIs
