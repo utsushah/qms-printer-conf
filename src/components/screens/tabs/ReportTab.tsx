@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { useSettings } from '@/contexts/SettingsContext';
 import { esp32Api, RemoteReportData } from '@/api/esp32';
 import { toast } from '@/hooks/use-toast';
-import * as XLSX from 'xlsx';
+import XLSX from 'xlsx-js-style';
 
 const ReportTab: React.FC = () => {
   const { settings } = useSettings();
@@ -53,8 +53,8 @@ const ReportTab: React.FC = () => {
       // Create data array with header row
       const excelData: any[][] = [];
       
-      // Row 1: eQueue header
-      excelData.push(['eQueue', '', '', '', '', '', '', '']);
+      // Row 1: Title header
+      excelData.push(['Queue Management System', '', '', '', '', '', '', '']);
       
       // Row 2: Column headers
       excelData.push(['Date', 'Remote ID', 'Service Code', 'Current Token', 'Issued Tokens', 'Waiting Time', 'Serving Time', 'Turnaround Time']);
@@ -92,26 +92,83 @@ const ReportTab: React.FC = () => {
       // Create worksheet from array
       const worksheet = XLSX.utils.aoa_to_sheet(excelData);
       
-      // Merge eQueue header across columns A-H
+      // Merge title header across columns A-H
       worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
+      
+      // Define border style
+      const thinBorder = {
+        top: { style: 'thin', color: { rgb: '000000' } },
+        bottom: { style: 'thin', color: { rgb: '000000' } },
+        left: { style: 'thin', color: { rgb: '000000' } },
+        right: { style: 'thin', color: { rgb: '000000' } }
+      };
+      
+      // Apply styles to all cells
+      const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1:H1');
+      for (let row = range.s.r; row <= range.e.r; row++) {
+        for (let col = range.s.c; col <= range.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+          if (!worksheet[cellAddress]) {
+            worksheet[cellAddress] = { v: '', t: 's' };
+          }
+          
+          // Initialize style object
+          worksheet[cellAddress].s = {
+            border: thinBorder,
+            alignment: { horizontal: 'center', vertical: 'center' }
+          };
+          
+          if (row === 0) {
+            // Title row: Font 22, Bold, Center
+            worksheet[cellAddress].s = {
+              ...worksheet[cellAddress].s,
+              font: { bold: true, sz: 22 },
+              alignment: { horizontal: 'center', vertical: 'center' },
+              border: thinBorder
+            };
+          } else if (row === 1) {
+            // Column headers: Font 14, Bold, Center
+            worksheet[cellAddress].s = {
+              ...worksheet[cellAddress].s,
+              font: { bold: true, sz: 14 },
+              alignment: { horizontal: 'center', vertical: 'center' },
+              border: thinBorder
+            };
+          } else {
+            // Data rows: Font 12, Center
+            worksheet[cellAddress].s = {
+              ...worksheet[cellAddress].s,
+              font: { sz: 12 },
+              alignment: { horizontal: 'center', vertical: 'center' },
+              border: thinBorder
+            };
+          }
+        }
+      }
+      
+      // Set row heights
+      worksheet['!rows'] = [
+        { hpt: 30 }, // Title row height
+        { hpt: 22 }, // Header row height
+      ];
       
       // Auto-size columns
       const colWidths = [
-        { wch: 12 }, // Date
-        { wch: 12 }, // Remote ID
-        { wch: 14 }, // Service Code
-        { wch: 14 }, // Current Token
-        { wch: 14 }, // Issued Tokens
-        { wch: 14 }, // Waiting Time
-        { wch: 14 }, // Serving Time
-        { wch: 16 }, // Turnaround Time
+        { wch: 14 }, // Date
+        { wch: 14 }, // Remote ID
+        { wch: 16 }, // Service Code
+        { wch: 16 }, // Current Token
+        { wch: 16 }, // Issued Tokens
+        { wch: 16 }, // Waiting Time
+        { wch: 16 }, // Serving Time
+        { wch: 18 }, // Turnaround Time
       ];
       worksheet['!cols'] = colWidths;
       
       XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
       
-      // Generate Excel file and download
-      XLSX.writeFile(workbook, `report_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}.xlsx`);
+      // Generate Excel file with styling support
+      XLSX.writeFile(workbook, `report_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}.xlsx`, { cellStyles: true });
       
       toast({
         title: "Export Successful",
