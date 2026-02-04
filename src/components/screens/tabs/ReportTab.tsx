@@ -47,55 +47,68 @@ const ReportTab: React.FC = () => {
   const handleExport = async () => {
     setExporting(true);
     try {
-      // Prepare data for Excel
-      const excelData: any[] = [];
+      // Create workbook
+      const workbook = XLSX.utils.book_new();
       
+      // Create data array with header row
+      const excelData: any[][] = [];
+      
+      // Row 1: eQueue header
+      excelData.push(['eQueue', '', '', '', '', '', '', '']);
+      
+      // Row 2: Column headers
+      excelData.push(['Date', 'Remote ID', 'Service Code', 'Current Token', 'Issued Tokens', 'Waiting Time', 'Serving Time', 'Turnaround Time']);
+      
+      // Data rows
       if (reportData.length > 0) {
         reportData.forEach(row => {
-          excelData.push({
-            'Date': row.date,
-            'Remote ID': row.remoteId,
-            'Service Code': row.serviceCode,
-            'Current Token': row.currentToken ?? 0,
-            'Issued Tokens': row.issuedTokens ?? 0,
-            'Waiting Time (s)': row.waitingTime,
-            'Serving Time (s)': row.servingTime,
-            'Turnaround Time (s)': row.turnaroundTime
-          });
+          excelData.push([
+            row.date,
+            row.remoteId,
+            row.serviceCode,
+            row.currentToken ?? 0,
+            row.issuedTokens ?? 0,
+            formatTime(row.waitingTime),
+            formatTime(row.servingTime),
+            formatTime(row.turnaroundTime)
+          ]);
         });
       } else {
         // If no data, create empty rows for each device
         remoteDevices.forEach(device => {
-          excelData.push({
-            'Date': format(startDate, 'yyyy-MM-dd'),
-            'Remote ID': device.remoteId,
-            'Service Code': device.serviceCode,
-            'Current Token': 0,
-            'Issued Tokens': 0,
-            'Waiting Time (s)': 0,
-            'Serving Time (s)': 0,
-            'Turnaround Time (s)': 0
-          });
+          excelData.push([
+            format(startDate, 'yyyy-MM-dd'),
+            device.remoteId,
+            device.serviceCode,
+            0,
+            0,
+            '0m 0s',
+            '0m 0s',
+            '0m 0s'
+          ]);
         });
       }
       
-      // Create workbook and worksheet
-      const worksheet = XLSX.utils.json_to_sheet(excelData);
-      const workbook = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
+      // Create worksheet from array
+      const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+      
+      // Merge eQueue header across columns A-H
+      worksheet['!merges'] = [{ s: { r: 0, c: 0 }, e: { r: 0, c: 7 } }];
       
       // Auto-size columns
       const colWidths = [
         { wch: 12 }, // Date
-        { wch: 15 }, // Remote ID
-        { wch: 15 }, // Service Code
-        { wch: 15 }, // Current Token
-        { wch: 15 }, // Issued Tokens
-        { wch: 18 }, // Waiting Time
-        { wch: 18 }, // Serving Time
-        { wch: 20 }, // Turnaround Time
+        { wch: 12 }, // Remote ID
+        { wch: 14 }, // Service Code
+        { wch: 14 }, // Current Token
+        { wch: 14 }, // Issued Tokens
+        { wch: 14 }, // Waiting Time
+        { wch: 14 }, // Serving Time
+        { wch: 16 }, // Turnaround Time
       ];
       worksheet['!cols'] = colWidths;
+      
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Report');
       
       // Generate Excel file and download
       XLSX.writeFile(workbook, `report_${format(startDate, 'yyyyMMdd')}_${format(endDate, 'yyyyMMdd')}.xlsx`);
@@ -121,8 +134,29 @@ const ReportTab: React.FC = () => {
     return `${mins}m ${secs}s`;
   };
 
-  const getDeviceReport = (remoteId: string): RemoteReportData | undefined => {
-    return reportData.find(r => r.remoteId === remoteId);
+  // Calculate averages for a specific remote device
+  const getDeviceAverages = (remoteId: string) => {
+    const deviceData = reportData.filter(r => r.remoteId === remoteId);
+    if (deviceData.length === 0) return null;
+    
+    const avgWaitingTime = Math.round(deviceData.reduce((sum, r) => sum + r.waitingTime, 0) / deviceData.length);
+    const avgServingTime = Math.round(deviceData.reduce((sum, r) => sum + r.servingTime, 0) / deviceData.length);
+    const avgTurnaroundTime = Math.round(deviceData.reduce((sum, r) => sum + r.turnaroundTime, 0) / deviceData.length);
+    
+    // Get latest values for current token and issued tokens (most recent date)
+    const sortedData = [...deviceData].sort((a, b) => b.date.localeCompare(a.date));
+    const latestData = sortedData[0];
+    
+    // Sum issued tokens across all dates
+    const totalIssuedTokens = deviceData.reduce((sum, r) => sum + (r.issuedTokens ?? 0), 0);
+    
+    return {
+      currentToken: latestData?.currentToken,
+      issuedTokens: totalIssuedTokens,
+      avgWaitingTime,
+      avgServingTime,
+      avgTurnaroundTime
+    };
   };
 
   return (
@@ -204,7 +238,7 @@ const ReportTab: React.FC = () => {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {remoteDevices.map((device, index) => {
-            const report = getDeviceReport(device.remoteId);
+            const averages = getDeviceAverages(device.remoteId);
             return (
               <Card key={index} className="p-4">
                 <div className="flex items-center gap-3 mb-4">
@@ -228,7 +262,7 @@ const ReportTab: React.FC = () => {
                       <span className="text-sm text-muted-foreground">Current Token</span>
                     </div>
                     <span className="font-medium text-foreground">
-                      {report?.currentToken ?? '--'}
+                      {averages?.currentToken ?? '--'}
                     </span>
                   </div>
 
@@ -238,37 +272,37 @@ const ReportTab: React.FC = () => {
                       <span className="text-sm text-muted-foreground">Issued Tokens</span>
                     </div>
                     <span className="font-medium text-foreground">
-                      {report?.issuedTokens ?? '--'}
+                      {averages?.issuedTokens ?? '--'}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Clock className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Waiting Time</span>
+                      <span className="text-sm text-muted-foreground">Avg Waiting Time</span>
                     </div>
                     <span className="font-medium text-foreground">
-                      {report ? formatTime(report.waitingTime) : '--'}
+                      {averages ? formatTime(averages.avgWaitingTime) : '--'}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <Timer className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Serving Time</span>
+                      <span className="text-sm text-muted-foreground">Avg Serving Time</span>
                     </div>
                     <span className="font-medium text-foreground">
-                      {report ? formatTime(report.servingTime) : '--'}
+                      {averages ? formatTime(averages.avgServingTime) : '--'}
                     </span>
                   </div>
 
                   <div className="flex items-center justify-between p-2 bg-muted/50 rounded-lg">
                     <div className="flex items-center gap-2">
                       <RotateCw className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm text-muted-foreground">Turnaround Time</span>
+                      <span className="text-sm text-muted-foreground">Avg Turnaround Time</span>
                     </div>
                     <span className="font-medium text-foreground">
-                      {report ? formatTime(report.turnaroundTime) : '--'}
+                      {averages ? formatTime(averages.avgTurnaroundTime) : '--'}
                     </span>
                   </div>
                 </div>
