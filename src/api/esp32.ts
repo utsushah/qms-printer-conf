@@ -256,8 +256,8 @@ export const esp32Api = {
     }
   },
 
-  // Logo Upload API - sends monochrome BMP to ESP32
-  async uploadLogo(bmpBlob: Blob): Promise<ApiResponse> {
+  // Logo Upload API - sends raw monochrome raster binary to ESP32
+  async uploadLogo(binBlob: Blob, width: number, height: number): Promise<ApiResponse> {
     try {
       const xhr = new XMLHttpRequest();
       const authHeaders = getAuthHeaders();
@@ -280,8 +280,10 @@ export const esp32Api = {
         if (authHeaders.Authorization) {
           xhr.setRequestHeader('Authorization', authHeaders.Authorization);
         }
-        xhr.setRequestHeader('Content-Type', 'image/bmp');
-        xhr.send(bmpBlob);
+        xhr.setRequestHeader('Content-Type', 'application/octet-stream');
+        xhr.setRequestHeader('X-Logo-Width', String(width));
+        xhr.setRequestHeader('X-Logo-Height', String(height));
+        xhr.send(binBlob);
       });
     } catch (error) {
       console.error('API Error:', error);
