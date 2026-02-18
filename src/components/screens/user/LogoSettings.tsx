@@ -11,7 +11,7 @@ interface LogoSettingsProps {
   onBack: () => void;
 }
 
-const MAX_WIDTH = 384;
+const MAX_WIDTH = 320;
 
 /**
  * Converts an image file to a raw monochrome raster binary (.bin) for ESC/POS thermal printers.
