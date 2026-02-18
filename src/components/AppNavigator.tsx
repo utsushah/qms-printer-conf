@@ -11,6 +11,7 @@ import DateTimeSettings from './screens/user/DateTimeSettings';
 import DispenseSettings from './screens/user/DispenseSettings';
 import WiFiSettings from './screens/user/WiFiSettings';
 import InfoSettings from './screens/user/InfoSettings';
+import LogoSettings from './screens/user/LogoSettings';
 import ServiceSetting from './screens/manufacturing/ServiceSetting';
 import RemoteSetting from './screens/manufacturing/RemoteSetting';
 import DisplaySetting from './screens/manufacturing/DisplaySetting';
@@ -31,6 +32,7 @@ type Screen =
   | 'dispense'
   | 'wifi'
   | 'info'
+  | 'logo'
   | 'mfg-service'
   | 'mfg-remote'
   | 'mfg-display'
@@ -91,6 +93,8 @@ const AppNavigator: React.FC = () => {
         return <WiFiSettings onBack={goBack} />;
       case 'info':
         return <InfoSettings onBack={goBack} />;
+      case 'logo':
+        return <LogoSettings onBack={goBack} />;
       
       // Manufacturing Settings Screens
       case 'mfg-service':
