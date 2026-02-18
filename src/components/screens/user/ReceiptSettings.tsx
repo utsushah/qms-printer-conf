@@ -42,7 +42,7 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
   };
 
   const updateFirmLine = (index: number, value: string) => {
-    if (value.length > 16) return;
+    if (value.length > 30) return;
     setReceipt(prev => ({
       ...prev,
       firmLines: {
@@ -63,7 +63,7 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
   };
 
   const updateMessageLine = (index: number, value: string) => {
-    if (value.length > 16) return;
+    if (value.length > 30) return;
     setReceipt(prev => ({
       ...prev,
       messageLines: {
@@ -74,10 +74,10 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
   };
 
   const handleSave = async () => {
-    if (receipt.department.enabled && receipt.department.name.length > 16) {
+    if (receipt.department.enabled && receipt.department.name.length > 30) {
       toast({
         title: "Validation Error",
-        description: "Department name must be 16 characters or less",
+        description: "Department name must be 30 characters or less",
         variant: "destructive",
       });
       return;
@@ -125,15 +125,15 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
           </SettingRow>
           {receipt.department.enabled && (
             <div className="mt-3">
-              <Label className="text-sm text-muted-foreground">Department Name (max 16 chars)</Label>
+              <Label className="text-sm text-muted-foreground">Department Name (max 30 chars)</Label>
               <Input
                 value={receipt.department.name}
-                onChange={(e) => updateDepartment(true, e.target.value.slice(0, 16))}
+                onChange={(e) => updateDepartment(true, e.target.value.slice(0, 30))}
                 placeholder="Enter department name"
-                maxLength={16}
+                maxLength={30}
                 className="mt-2"
               />
-              <p className="text-xs text-muted-foreground mt-1">{receipt.department.name.length}/16</p>
+              <p className="text-xs text-muted-foreground mt-1">{receipt.department.name.length}/30</p>
             </div>
           )}
         </Card>
@@ -165,10 +165,10 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
                   value={receipt.firmLines.lines[i] || ''}
                   onChange={(e) => updateFirmLine(i, e.target.value)}
                   placeholder={`Enter firm name line ${i + 1}`}
-                  maxLength={16}
+                  maxLength={30}
                   className="mt-1"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{(receipt.firmLines.lines[i] || '').length}/16</p>
+                <p className="text-xs text-muted-foreground mt-1">{(receipt.firmLines.lines[i] || '').length}/30</p>
               </div>
             ))}
           </div>
@@ -201,10 +201,10 @@ const ReceiptSettings: React.FC<ReceiptSettingsProps> = ({ onBack }) => {
                   value={receipt.messageLines.lines[i] || ''}
                   onChange={(e) => updateMessageLine(i, e.target.value)}
                   placeholder={`Enter message line ${i + 1}`}
-                  maxLength={16}
+                  maxLength={30}
                   className="mt-1"
                 />
-                <p className="text-xs text-muted-foreground mt-1">{(receipt.messageLines.lines[i] || '').length}/16</p>
+                <p className="text-xs text-muted-foreground mt-1">{(receipt.messageLines.lines[i] || '').length}/30</p>
               </div>
             ))}
           </div>

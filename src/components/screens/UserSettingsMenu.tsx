@@ -6,7 +6,8 @@ import {
   Clock, 
   Ticket, 
   Wifi, 
-  Info 
+  Info,
+  ImageIcon
 } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import MenuCard from '@/components/layout/MenuCard';
@@ -66,6 +67,13 @@ const UserSettingsMenu: React.FC<UserSettingsMenuProps> = ({ onNavigate, onBack 
           onClick={() => onNavigate('wifi')}
           disabled={!isWiFiProtocol}
           badge={!isWiFiProtocol ? "Disabled" : undefined}
+        />
+        
+        <MenuCard
+          icon={ImageIcon}
+          title="Logo Setting"
+          description="Upload receipt logo"
+          onClick={() => onNavigate('logo')}
         />
         
         <MenuCard

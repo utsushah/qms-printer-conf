@@ -256,6 +256,39 @@ export const esp32Api = {
     }
   },
 
+  // Logo Upload API - sends monochrome BMP to ESP32
+  async uploadLogo(bmpBlob: Blob): Promise<ApiResponse> {
+    try {
+      const xhr = new XMLHttpRequest();
+      const authHeaders = getAuthHeaders();
+
+      return new Promise((resolve, reject) => {
+        xhr.addEventListener('load', () => {
+          if (xhr.status === 401) {
+            clearSession();
+            reject(new Error('Session expired. Please login again.'));
+            return;
+          }
+          if (xhr.status >= 200 && xhr.status < 300) {
+            resolve(JSON.parse(xhr.responseText));
+          } else {
+            reject(new Error('Logo upload failed'));
+          }
+        });
+        xhr.addEventListener('error', () => reject(new Error('Logo upload failed')));
+        xhr.open('POST', `${API_BASE}/api/settings/logo`);
+        if (authHeaders.Authorization) {
+          xhr.setRequestHeader('Authorization', authHeaders.Authorization);
+        }
+        xhr.setRequestHeader('Content-Type', 'image/bmp');
+        xhr.send(bmpBlob);
+      });
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
   async exportRemoteReport(startDate: string, endDate: string): Promise<Blob> {
     try {
       const res = await fetch(
