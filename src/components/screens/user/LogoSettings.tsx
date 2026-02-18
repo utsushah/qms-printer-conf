@@ -14,22 +14,27 @@ interface LogoSettingsProps {
 const MAX_WIDTH = 320;
 
 /**
- * Converts an image file to a 320px max-width, BMP monochrome (1-bit per pixel) ArrayBuffer.
+ * Converts an image file to a raw monochrome raster binary (.bin) for ESC/POS thermal printers.
+ * Format: Raw 1-bit pixel data, no headers, top-to-bottom, MSB first, black=1.
+ * Width is padded to multiple of 8. Each row = width/8 bytes.
+ * This is the format expected by GS v 0 raster command on ESP32.
  */
-const convertToMonochromeBmp = async (file: File): Promise<{ blob: Blob; previewUrl: string }> => {
+const convertToMonoRasterBin = async (file: File): Promise<{ blob: Blob; previewUrl: string; width: number; height: number }> => {
   return new Promise((resolve, reject) => {
     const img = new Image();
     const reader = new FileReader();
 
     reader.onload = (e) => {
       img.onload = () => {
-        // Scale to max 320px width
+        // Scale to max width, ensure width is multiple of 8
         let width = img.width;
         let height = img.height;
         if (width > MAX_WIDTH) {
           height = Math.round((height * MAX_WIDTH) / width);
           width = MAX_WIDTH;
         }
+        // Round width up to multiple of 8
+        width = Math.ceil(width / 8) * 8;
 
         // Draw to canvas and get pixel data
         const canvas = document.createElement('canvas');
@@ -42,68 +47,27 @@ const convertToMonochromeBmp = async (file: File): Promise<{ blob: Blob; preview
         const imageData = ctx.getImageData(0, 0, width, height);
         const pixels = imageData.data;
 
-        // Convert to 1-bit monochrome using threshold
-        const rowBytes = Math.ceil(width / 32) * 4; // BMP rows are padded to 4 bytes
-        const pixelDataSize = rowBytes * height;
+        const widthBytes = width / 8;
+        const totalBytes = widthBytes * height;
+        const buffer = new Uint8Array(totalBytes);
 
-        // BMP file structure
-        const fileHeaderSize = 14;
-        const infoHeaderSize = 40;
-        const paletteSize = 8; // 2 colors × 4 bytes
-        const fileSize = fileHeaderSize + infoHeaderSize + paletteSize + pixelDataSize;
-
-        const buffer = new ArrayBuffer(fileSize);
-        const view = new DataView(buffer);
-
-        // BMP File Header (14 bytes)
-        view.setUint8(0, 0x42); // 'B'
-        view.setUint8(1, 0x4D); // 'M'
-        view.setUint32(2, fileSize, true);
-        view.setUint32(6, 0, true); // Reserved
-        view.setUint32(10, fileHeaderSize + infoHeaderSize + paletteSize, true); // Pixel data offset
-
-        // BMP Info Header (40 bytes)
-        view.setUint32(14, infoHeaderSize, true);
-        view.setInt32(18, width, true);
-        view.setInt32(22, height, true); // Positive = bottom-up
-        view.setUint16(26, 1, true); // Planes
-        view.setUint16(28, 1, true); // 1 bit per pixel
-        view.setUint32(30, 0, true); // No compression
-        view.setUint32(34, pixelDataSize, true);
-        view.setUint32(38, 2835, true); // X pixels per meter (72 DPI)
-        view.setUint32(42, 2835, true); // Y pixels per meter
-        view.setUint32(46, 2, true); // Colors used
-        view.setUint32(50, 2, true); // Important colors
-
-        // Color palette: Black (index 0), White (index 1)
-        const paletteOffset = fileHeaderSize + infoHeaderSize;
-        // Black: B=0, G=0, R=0, A=0
-        view.setUint32(paletteOffset, 0x00000000, true);
-        // White: B=FF, G=FF, R=FF, A=0
-        view.setUint8(paletteOffset + 4, 0xFF);
-        view.setUint8(paletteOffset + 5, 0xFF);
-        view.setUint8(paletteOffset + 6, 0xFF);
-        view.setUint8(paletteOffset + 7, 0x00);
-
-        // Pixel data (bottom-up, 1-bit)
-        const dataOffset = paletteOffset + paletteSize;
+        // Convert to 1-bit raster: top-to-bottom, MSB first, black=1
         for (let y = 0; y < height; y++) {
-          const bmpRow = height - 1 - y; // BMP is bottom-up
           for (let x = 0; x < width; x++) {
             const srcIdx = (y * width + x) * 4;
             const gray = pixels[srcIdx] * 0.299 + pixels[srcIdx + 1] * 0.587 + pixels[srcIdx + 2] * 0.114;
-            // Threshold: > 128 = white (1), else black (0)
-            if (gray > 128) {
-              const byteIdx = dataOffset + bmpRow * rowBytes + Math.floor(x / 8);
+            // Threshold: <= 128 = black (bit=1), > 128 = white (bit=0)
+            if (gray <= 128) {
+              const byteIdx = y * widthBytes + Math.floor(x / 8);
               const bitIdx = 7 - (x % 8);
-              view.setUint8(byteIdx, view.getUint8(byteIdx) | (1 << bitIdx));
+              buffer[byteIdx] |= (1 << bitIdx);
             }
           }
         }
 
-        const blob = new Blob([buffer], { type: 'image/bmp' });
+        const blob = new Blob([buffer], { type: 'application/octet-stream' });
 
-        // Generate preview from the threshold canvas
+        // Generate monochrome preview on canvas
         for (let i = 0; i < pixels.length; i += 4) {
           const gray = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
           const val = gray > 128 ? 255 : 0;
@@ -114,7 +78,7 @@ const convertToMonochromeBmp = async (file: File): Promise<{ blob: Blob; preview
         ctx.putImageData(imageData, 0, 0);
         const previewUrl = canvas.toDataURL('image/png');
 
-        resolve({ blob, previewUrl });
+        resolve({ blob, previewUrl, width, height });
       };
       img.onerror = () => reject(new Error('Failed to load image'));
       img.src = e.target?.result as string;
@@ -126,7 +90,8 @@ const convertToMonochromeBmp = async (file: File): Promise<{ blob: Blob; preview
 
 const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [bmpBlob, setBmpBlob] = useState<Blob | null>(null);
+  const [binBlob, setBinBlob] = useState<Blob | null>(null);
+  const [dimensions, setDimensions] = useState<{ width: number; height: number } | null>(null);
   const [loading, setLoading] = useState(false);
   const [processing, setProcessing] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -142,10 +107,12 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
 
     setProcessing(true);
     try {
-      const { blob, previewUrl: preview } = await convertToMonochromeBmp(file);
-      setBmpBlob(blob);
+      const { blob, previewUrl: preview, width, height } = await convertToMonoRasterBin(file);
+      setBinBlob(blob);
       setPreviewUrl(preview);
-      toast({ title: "Image Processed", description: `Converted to ${MAX_WIDTH}px monochrome BMP` });
+      setDimensions({ width, height });
+      const totalBytes = (width / 8) * height;
+      toast({ title: "Image Processed", description: `Converted to ${width}×${height} raster bin (${totalBytes} bytes)` });
     } catch {
       toast({ title: "Processing Failed", description: "Failed to convert image", variant: "destructive" });
     } finally {
@@ -156,18 +123,19 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
 
   const handleRemove = () => {
     setPreviewUrl(null);
-    setBmpBlob(null);
+    setBinBlob(null);
+    setDimensions(null);
   };
 
   const handleSave = async () => {
-    if (!bmpBlob) {
+    if (!binBlob || !dimensions) {
       toast({ title: "No Logo", description: "Please upload a logo image first", variant: "destructive" });
       return;
     }
 
     setLoading(true);
     try {
-      const result = await esp32Api.uploadLogo(bmpBlob);
+      const result = await esp32Api.uploadLogo(binBlob, dimensions.width, dimensions.height);
       if (result.success) {
         toast({ title: "Logo Saved", description: "Logo uploaded to device successfully" });
       } else {
@@ -191,7 +159,7 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
             <div>
               <h3 className="font-medium text-foreground">Receipt Logo</h3>
               <p className="text-sm text-muted-foreground">
-                Upload image — auto-converted to {MAX_WIDTH}px monochrome BMP
+                Upload image — auto-converted to {MAX_WIDTH}px monochrome raster (.bin)
               </p>
             </div>
           </div>
@@ -215,7 +183,7 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
                 />
               </div>
               <p className="text-xs text-muted-foreground text-center">
-                Monochrome 1-bit BMP preview ({MAX_WIDTH}px max width)
+                Monochrome 1-bit raster preview{dimensions ? ` (${dimensions.width}×${dimensions.height}, ${(dimensions.width / 8) * dimensions.height} bytes)` : ''}
               </p>
               <div className="flex gap-2">
                 <Button
