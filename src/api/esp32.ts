@@ -257,12 +257,18 @@ export const esp32Api = {
   },
 
   // Logo Upload API - sends raw monochrome raster binary to ESP32
-  async uploadLogo(binBlob: Blob, width: number, height: number): Promise<ApiResponse> {
+  async uploadLogo(binBlob: Blob, width: number, height: number, onProgress?: (progress: number) => void): Promise<ApiResponse> {
     try {
       const xhr = new XMLHttpRequest();
       const authHeaders = getAuthHeaders();
 
       return new Promise((resolve, reject) => {
+        xhr.upload.addEventListener('progress', (e) => {
+          if (e.lengthComputable && onProgress) {
+            onProgress(Math.round((e.loaded / e.total) * 100));
+          }
+        });
+
         xhr.addEventListener('load', () => {
           if (xhr.status === 401) {
             clearSession();
