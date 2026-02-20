@@ -256,6 +256,62 @@ export const esp32Api = {
     }
   },
 
+  // Logo GET API - fetches stored logo.bin and renders to data URL
+  async getLogo(): Promise<{ dataUrl: string; width: number; height: number } | null> {
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/logo`, {
+        headers: getAuthHeaders(),
+      });
+      if (res.status === 401) { clearSession(); throw new Error('Session expired.'); }
+      if (res.status === 404) return null;
+      if (!res.ok) throw new Error('Failed to fetch logo');
+      const width = parseInt(res.headers.get('X-Logo-Width') || '0', 10);
+      const height = parseInt(res.headers.get('X-Logo-Height') || '0', 10);
+      const buffer = await res.arrayBuffer();
+      const bytes = new Uint8Array(buffer);
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      const imgData = ctx.createImageData(width, height);
+      const widthBytes = width / 8;
+      for (let y = 0; y < height; y++) {
+        for (let x = 0; x < width; x++) {
+          const byteIdx = y * widthBytes + Math.floor(x / 8);
+          const bitIdx = 7 - (x % 8);
+          const isBlack = (bytes[byteIdx] >> bitIdx) & 1;
+          const val = isBlack ? 0 : 255;
+          const pIdx = (y * width + x) * 4;
+          imgData.data[pIdx] = val;
+          imgData.data[pIdx + 1] = val;
+          imgData.data[pIdx + 2] = val;
+          imgData.data[pIdx + 3] = 255;
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+      return { dataUrl: canvas.toDataURL('image/png'), width, height };
+    } catch (error) {
+      console.error('API Error:', error);
+      return null;
+    }
+  },
+
+  // Logo DELETE API - removes stored logo from ESP32
+  async deleteLogo(): Promise<ApiResponse> {
+    try {
+      const res = await fetch(`${API_BASE}/api/settings/logo`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (res.status === 401) { clearSession(); throw new Error('Session expired.'); }
+      if (!res.ok) throw new Error('Failed to delete logo');
+      return res.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      throw error;
+    }
+  },
+
   // Logo Upload API - sends raw monochrome raster binary to ESP32
   async uploadLogo(binBlob: Blob, width: number, height: number, onProgress?: (progress: number) => void): Promise<ApiResponse> {
     try {

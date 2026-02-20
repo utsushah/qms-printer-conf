@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { ImageIcon, Upload, Trash2, CheckCircle2, Loader2 } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { ImageIcon, Upload, Trash2, CheckCircle2, Loader2, RefreshCw } from 'lucide-react';
 import PageContainer from '@/components/layout/PageContainer';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -90,7 +90,26 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
   const [progress, setProgress] = useState(0);
   const [uploadComplete, setUploadComplete] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const [loadingStored, setLoadingStored] = useState(true);
+  const [storedLogo, setStoredLogo] = useState<{ dataUrl: string; width: number; height: number } | null>(null);
+  const [deletingLogo, setDeletingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Load stored logo from device on mount
+  useEffect(() => {
+    const fetchStoredLogo = async () => {
+      setLoadingStored(true);
+      try {
+        const result = await esp32Api.getLogo();
+        setStoredLogo(result);
+      } catch {
+        setStoredLogo(null);
+      } finally {
+        setLoadingStored(false);
+      }
+    };
+    fetchStoredLogo();
+  }, []);
 
   const handleFileSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -125,6 +144,23 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
     setUploadComplete(false);
   };
 
+  const handleDeleteStoredLogo = async () => {
+    setDeletingLogo(true);
+    try {
+      const result = await esp32Api.deleteLogo();
+      if (result.success) {
+        setStoredLogo(null);
+        toast({ title: "Logo Deleted", description: "Logo removed from device successfully" });
+      } else {
+        toast({ title: "Delete Failed", description: result.error || "Failed to delete logo", variant: "destructive" });
+      }
+    } catch (error) {
+      toast({ title: "Delete Failed", description: error instanceof Error ? error.message : "Failed to delete logo", variant: "destructive" });
+    } finally {
+      setDeletingLogo(false);
+    }
+  };
+
   const handleUpload = async () => {
     if (!binBlob || !dimensions) {
       toast({ title: "No Logo", description: "Please upload a logo image first", variant: "destructive" });
@@ -141,6 +177,9 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
       });
       if (result.success) {
         setUploadComplete(true);
+        // Refresh stored logo preview
+        const stored = await esp32Api.getLogo();
+        setStoredLogo(stored);
         toast({ title: "Logo Saved", description: "Logo uploaded to device successfully" });
       } else {
         toast({ title: "Upload Failed", description: result.error || "Failed to upload logo", variant: "destructive" });
@@ -161,7 +200,53 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
   return (
     <PageContainer title="Logo Setting" showBack onBack={onBack}>
       <div className="space-y-4">
+
+        {/* Stored Logo on Device */}
+        <Card className="p-4">
+          <h3 className="font-medium text-foreground mb-3">Current Logo on Device</h3>
+          {loadingStored ? (
+            <div className="flex items-center gap-2 text-muted-foreground py-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm">Loading stored logo...</span>
+            </div>
+          ) : storedLogo ? (
+            <div className="space-y-3">
+              <div className="border border-border rounded-lg p-4 bg-muted/30 flex items-center justify-center">
+                <img
+                  src={storedLogo.dataUrl}
+                  alt="Stored logo on device"
+                  className="max-w-full h-auto"
+                  style={{ imageRendering: 'pixelated' }}
+                />
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {storedLogo.width}×{storedLogo.height} · {formatFileSize((storedLogo.width / 8) * storedLogo.height)}
+              </p>
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={handleDeleteStoredLogo}
+                disabled={deletingLogo}
+              >
+                {deletingLogo ? (
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                ) : (
+                  <Trash2 className="h-4 w-4 mr-2" />
+                )}
+                {deletingLogo ? 'Deleting...' : 'Delete Logo from Device'}
+              </Button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-2 text-muted-foreground py-2">
+              <ImageIcon className="h-4 w-4" />
+              <span className="text-sm">No logo stored on device</span>
+            </div>
+          )}
+        </Card>
+
+        {/* Upload New Logo */}
         <Card className="p-6">
+          <h3 className="font-medium text-foreground mb-3">Upload New Logo</h3>
           <input
             ref={fileInputRef}
             type="file"
@@ -281,3 +366,4 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
 };
 
 export default LogoSettings;
+
