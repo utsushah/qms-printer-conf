@@ -52,7 +52,7 @@ const convertToMonoRasterBin = async (file: File): Promise<{ blob: Blob; preview
           for (let x = 0; x < width; x++) {
             const srcIdx = (y * width + x) * 4;
             const gray = pixels[srcIdx] * 0.299 + pixels[srcIdx + 1] * 0.587 + pixels[srcIdx + 2] * 0.114;
-            if (gray <= 128) {
+            if (gray < 220) {
               const byteIdx = y * widthBytes + Math.floor(x / 8);
               const bitIdx = 7 - (x % 8);
               buffer[byteIdx] |= (1 << bitIdx);
@@ -64,7 +64,7 @@ const convertToMonoRasterBin = async (file: File): Promise<{ blob: Blob; preview
 
         for (let i = 0; i < pixels.length; i += 4) {
           const gray = pixels[i] * 0.299 + pixels[i + 1] * 0.587 + pixels[i + 2] * 0.114;
-          const val = gray > 128 ? 255 : 0;
+          const val = gray >= 220 ? 255 : 0;
           pixels[i] = val;
           pixels[i + 1] = val;
           pixels[i + 2] = val;
