@@ -266,7 +266,10 @@ export const esp32Api = {
       });
       if (res.status === 401) { clearSession(); throw new Error('Session expired.'); }
       if (res.status === 404) return null;
-      if (!res.ok) throw new Error('Failed to fetch logo');
+      if (!res.ok) {
+        console.error('getLogo: HTTP error', res.status, res.statusText);
+        throw new Error(`Failed to fetch logo: ${res.status}`);
+      }
 
       const buffer = await res.arrayBuffer();
       const bytes = new Uint8Array(buffer);
