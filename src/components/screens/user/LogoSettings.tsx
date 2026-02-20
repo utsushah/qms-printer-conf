@@ -91,7 +91,7 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
   const [uploadComplete, setUploadComplete] = useState(false);
   const [processing, setProcessing] = useState(false);
   const [loadingStored, setLoadingStored] = useState(true);
-  const [storedLogo, setStoredLogo] = useState<{ dataUrl: string; width: number; height: number } | null>(null);
+  const [storedLogo, setStoredLogo] = useState<{ dataUrl: string; width: number; height: number; bytes?: number } | null>(null);
   const [deletingLogo, setDeletingLogo] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -220,7 +220,7 @@ const LogoSettings: React.FC<LogoSettingsProps> = ({ onBack }) => {
                 />
               </div>
               <p className="text-sm text-muted-foreground">
-                {storedLogo.width}×{storedLogo.height} · {formatFileSize((storedLogo.width / 8) * storedLogo.height)}
+                {storedLogo.width}×{storedLogo.height} · {formatFileSize(storedLogo.bytes ?? (Math.ceil(storedLogo.width / 8) * storedLogo.height))}
               </p>
               <Button
                 variant="destructive"

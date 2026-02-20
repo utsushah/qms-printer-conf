@@ -257,6 +257,8 @@ export const esp32Api = {
   },
 
   // Logo GET API - fetches stored logo.bin and renders to data URL
+  // The ESP32 prepends a 4-byte header: [width_hi, width_lo, height_hi, height_lo]
+  // followed by the raw 1-bit raster pixel data.
   async getLogo(): Promise<{ dataUrl: string; width: number; height: number } | null> {
     try {
       const res = await fetch(`${API_BASE}/api/settings/logo`, {
@@ -265,21 +267,30 @@ export const esp32Api = {
       if (res.status === 401) { clearSession(); throw new Error('Session expired.'); }
       if (res.status === 404) return null;
       if (!res.ok) throw new Error('Failed to fetch logo');
-      const width = parseInt(res.headers.get('X-Logo-Width') || '0', 10);
-      const height = parseInt(res.headers.get('X-Logo-Height') || '0', 10);
+
       const buffer = await res.arrayBuffer();
       const bytes = new Uint8Array(buffer);
+
+      // First 4 bytes: width (big-endian uint16) + height (big-endian uint16)
+      if (bytes.length < 4) throw new Error('Invalid logo data: too short');
+      const width  = (bytes[0] << 8) | bytes[1];
+      const height = (bytes[2] << 8) | bytes[3];
+      const pixelData = bytes.slice(4);
+
+      if (width === 0 || height === 0) throw new Error('Invalid logo dimensions');
+
       const canvas = document.createElement('canvas');
       canvas.width = width;
       canvas.height = height;
       const ctx = canvas.getContext('2d')!;
       const imgData = ctx.createImageData(width, height);
-      const widthBytes = width / 8;
+      const widthBytes = Math.ceil(width / 8);
+
       for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
           const byteIdx = y * widthBytes + Math.floor(x / 8);
           const bitIdx = 7 - (x % 8);
-          const isBlack = (bytes[byteIdx] >> bitIdx) & 1;
+          const isBlack = (pixelData[byteIdx] >> bitIdx) & 1;
           const val = isBlack ? 0 : 255;
           const pIdx = (y * width + x) * 4;
           imgData.data[pIdx] = val;
@@ -289,7 +300,8 @@ export const esp32Api = {
         }
       }
       ctx.putImageData(imgData, 0, 0);
-      return { dataUrl: canvas.toDataURL('image/png'), width, height };
+      const pixelBytes = widthBytes * height;
+      return { dataUrl: canvas.toDataURL('image/png'), width, height, bytes: pixelBytes } as { dataUrl: string; width: number; height: number; bytes: number };
     } catch (error) {
       console.error('API Error:', error);
       return null;
