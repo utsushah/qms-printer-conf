@@ -33,6 +33,8 @@ const InfoSettings: React.FC<InfoSettingsProps> = ({ onBack }) => {
     fetchInfo();
   }, []);
 
+  const printerEnabled = settings.manufacturing.printer.enabled;
+
   const infoItems = [
     {
       icon: Cpu,
@@ -52,12 +54,12 @@ const InfoSettings: React.FC<InfoSettingsProps> = ({ onBack }) => {
       value: protocolType,
       description: 'Communication protocol'
     },
-    {
+    ...(printerEnabled ? [{
       icon: Printer,
       label: 'Printer Model',
       value: printerModel,
       description: 'Connected printer device'
-    },
+    }] : []),
   ];
 
   return (
