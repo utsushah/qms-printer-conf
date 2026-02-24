@@ -83,6 +83,7 @@ const defaultSettings: AllSettings = {
       waitingAreaDisplay: { enabled: false, numberOfDisplays: 1, digitSetting: 3 },
     },
     printer: {
+      enabled: true,
       deviceModel: 'KP-628E',
       tokenCopies: 1,
       printerId: '',

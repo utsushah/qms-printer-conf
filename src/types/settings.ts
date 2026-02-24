@@ -112,6 +112,7 @@ export interface DisplaySettings {
 }
 
 export interface PrinterSettings {
+  enabled: boolean;
   deviceModel: PrinterModel;
   tokenCopies: number;
   printerId: string;
